@@ -1,0 +1,1832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Cascade Prevention Engine</title>
+  <style>
+    /* ── Reset & Variables ───────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base:      #0b0f1a;
+      --bg-surface:   #111827;
+      --bg-card:      #1a2236;
+      --bg-card-alt:  #1e2a3a;
+      --border:       rgba(99,179,237,0.12);
+      --border-glow:  rgba(99,179,237,0.35);
+      --accent:       #3b82f6;
+      --accent-light: #60a5fa;
+      --accent-glow:  rgba(59,130,246,0.25);
+      --teal:         #14b8a6;
+      --purple:       #8b5cf6;
+      --yellow:       #f59e0b;
+      --red:          #ef4444;
+      --green:        #10b981;
+      --orange:       #f97316;
+      --text-primary: #f0f6ff;
+      --text-secondary:#94a3b8;
+      --text-muted:   #64748b;
+      --shadow-card:  0 4px 24px rgba(0,0,0,0.45);
+      --radius-sm:    6px;
+      --radius-md:    12px;
+      --radius-lg:    18px;
+      --font:         'Inter', system-ui, -apple-system, sans-serif;
+      --sidebar-w:    240px;
+      --transition:   0.25s cubic-bezier(.4,0,.2,1);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      overflow-x: hidden;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+      transition: transform var(--transition);
+    }
+    .sidebar-logo {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-mark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .logo-text { font-size: 14px; font-weight: 700; line-height: 1.25; }
+    .logo-text span { color: var(--accent-light); }
+    .logo-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    .nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+    .nav-section { margin-bottom: 4px; }
+    .nav-label {
+      font-size: 10px; font-weight: 600; letter-spacing: .08em;
+      color: var(--text-muted); text-transform: uppercase;
+      padding: 8px 20px 4px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 20px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 0;
+      transition: all var(--transition);
+      font-size: 13.5px;
+      border-left: 2px solid transparent;
+      text-decoration: none;
+    }
+    .nav-item:hover { background: var(--bg-card); color: var(--text-primary); }
+    .nav-item.active {
+      background: var(--accent-glow);
+      color: var(--accent-light);
+      border-left-color: var(--accent);
+    }
+    .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--red);
+      color: #fff;
+      font-size: 10px; font-weight: 700;
+      border-radius: 9px;
+      padding: 2px 6px;
+    }
+    .nav-badge.green { background: var(--green); }
+    .nav-badge.yellow { background: var(--yellow); color: #1a1a0a; }
+
+    .sidebar-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .status-dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      margin-right: 6px;
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    /* ── Main Content ────────────────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ── Top Bar ─────────────────────────────────────────────────────────── */
+    .topbar {
+      height: 60px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      gap: 16px;
+      position: sticky; top: 0;
+      z-index: 90;
+    }
+    .topbar-title { font-size: 17px; font-weight: 600; flex: 1; }
+    .topbar-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all var(--transition);
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-light); box-shadow: 0 0 16px var(--accent-glow); }
+    .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--bg-card); color: var(--text-primary); }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-success { background: var(--green); color: #fff; }
+
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(16,185,129,.12);
+      border: 1px solid rgba(16,185,129,.25);
+      color: var(--green);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 12px; font-weight: 600;
+    }
+
+    /* ── Pages ───────────────────────────────────────────────────────────── */
+    .page { display: none; padding: 28px; animation: fadeIn 0.3s ease; }
+    .page.active { display: block; }
+
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes slideIn { from { transform:translateX(20px); opacity:0; } to { transform:none; opacity:1; } }
+    @keyframes countUp { from { opacity:0; } to { opacity:1; } }
+    @keyframes glow { 0%,100% { box-shadow:0 0 10px var(--accent-glow); } 50% { box-shadow:0 0 25px var(--accent-glow); } }
+
+    /* ── Section Heading ─────────────────────────────────────────────────── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .section-title { font-size: 20px; font-weight: 700; }
+    .section-desc { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+    /* ── Metric Cards ────────────────────────────────────────────────────── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 14px;
+      margin-bottom: 26px;
+    }
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color var(--transition), transform var(--transition);
+    }
+    .metric-card:hover { border-color: var(--border-glow); transform: translateY(-2px); }
+    .metric-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .metric-card.blue::before   { background: linear-gradient(90deg, var(--accent), var(--teal)); }
+    .metric-card.green::before  { background: linear-gradient(90deg, var(--green), var(--teal)); }
+    .metric-card.yellow::before { background: linear-gradient(90deg, var(--yellow), var(--orange)); }
+    .metric-card.red::before    { background: linear-gradient(90deg, var(--red), var(--orange)); }
+    .metric-card.purple::before { background: linear-gradient(90deg, var(--purple), var(--accent)); }
+
+    .metric-label { font-size: 11.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+    .metric-value { font-size: 32px; font-weight: 800; margin: 6px 0 4px; line-height: 1; }
+    .metric-value.green  { color: var(--green); }
+    .metric-value.yellow { color: var(--yellow); }
+    .metric-value.red    { color: var(--red); }
+    .metric-value.blue   { color: var(--accent-light); }
+    .metric-value.purple { color: var(--purple); }
+    .metric-sub { font-size: 12px; color: var(--text-muted); }
+    .metric-icon {
+      position: absolute; top: 16px; right: 16px;
+      font-size: 24px; opacity: .2;
+    }
+    .metric-trend {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 11px; font-weight: 600;
+      margin-top: 6px;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .metric-trend.up   { background: rgba(16,185,129,.15); color: var(--green); }
+    .metric-trend.down { background: rgba(239,68,68,.15);  color: var(--red); }
+    .metric-trend.neutral { background: rgba(148,163,184,.1); color: var(--text-muted); }
+
+    /* ── Two Column Layout ───────────────────────────────────────────────── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-bottom: 22px; }
+    @media(max-width: 900px) {
+      .two-col, .three-col { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card ────────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .card-title { font-size: 14px; font-weight: 600; }
+    .card-title-lg { font-size: 16px; font-weight: 700; }
+
+    /* ── Health Bar ──────────────────────────────────────────────────────── */
+    .health-bar-wrap { margin-bottom: 12px; }
+    .health-bar-label {
+      display: flex; justify-content: space-between;
+      font-size: 12.5px; margin-bottom: 5px;
+    }
+    .health-bar-track {
+      height: 8px;
+      background: var(--bg-base);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .health-bar-fill {
+      height: 100%; border-radius: 99px;
+      transition: width 1.5s cubic-bezier(.4,0,.2,1);
+    }
+    .health-bar-fill.good    { background: linear-gradient(90deg, var(--green), var(--teal)); }
+    .health-bar-fill.warning { background: linear-gradient(90deg, var(--yellow), var(--orange)); }
+    .health-bar-fill.danger  { background: linear-gradient(90deg, var(--red), var(--orange)); }
+
+    /* ── Dependency Graph ────────────────────────────────────────────────── */
+    #dep-graph-svg {
+      width: 100%;
+      height: 420px;
+      background: var(--bg-base);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    .graph-legend {
+      display: flex; gap: 14px; flex-wrap: wrap;
+      margin-top: 12px;
+      font-size: 12px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+
+    /* ── Event Table ─────────────────────────────────────────────────────── */
+    .event-list { display: flex; flex-direction: column; gap: 8px; }
+    .event-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 14px;
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      transition: border-color var(--transition);
+      animation: slideIn 0.3s ease;
+    }
+    .event-item:hover { border-color: var(--border-glow); }
+    .event-dot {
+      width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex-shrink: 0;
+    }
+    .event-dot.critical { background: var(--red);    box-shadow: 0 0 8px var(--red); }
+    .event-dot.warning  { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+    .event-dot.info     { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .event-dot.success  { background: var(--green);  box-shadow: 0 0 8px var(--green); }
+
+    .event-body { flex: 1; }
+    .event-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .event-desc  { font-size: 12px; color: var(--text-muted); }
+    .event-time  { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+    /* ── Badge ───────────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+    }
+    .badge-red    { background: rgba(239,68,68,.18);   color: var(--red); }
+    .badge-yellow { background: rgba(245,158,11,.18);  color: var(--yellow); }
+    .badge-green  { background: rgba(16,185,129,.18);  color: var(--green); }
+    .badge-blue   { background: rgba(59,130,246,.18);  color: var(--accent-light); }
+    .badge-purple { background: rgba(139,92,246,.18);  color: var(--purple); }
+    .badge-teal   { background: rgba(20,184,166,.18);  color: var(--teal); }
+
+    /* ── Remediation Plan Cards ──────────────────────────────────────────── */
+    .plan-card {
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      transition: border-color var(--transition);
+    }
+    .plan-card:hover { border-color: var(--border-glow); }
+    .plan-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .plan-name { font-size: 14px; font-weight: 700; }
+    .plan-confidence {
+      font-size: 13px; font-weight: 700; color: var(--teal);
+    }
+    .plan-steps { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
+    .plan-step {
+      display: flex; align-items: center; gap: 9px;
+      font-size: 12.5px; color: var(--text-secondary);
+    }
+    .step-num {
+      width: 20px; height: 20px;
+      background: var(--bg-base);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: var(--accent);
+      flex-shrink: 0;
+    }
+    .plan-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+    /* ── Services Grid ───────────────────────────────────────────────────── */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .service-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      transition: all var(--transition);
+      cursor: default;
+    }
+    .service-card:hover {
+      border-color: var(--border-glow);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .service-icon-wrap {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+    .service-icon-wrap.blue   { background: rgba(59,130,246,.15); }
+    .service-icon-wrap.green  { background: rgba(16,185,129,.15); }
+    .service-icon-wrap.purple { background: rgba(139,92,246,.15); }
+    .service-icon-wrap.yellow { background: rgba(245,158,11,.15); }
+    .service-icon-wrap.red    { background: rgba(239,68,68,.15);  }
+    .service-icon-wrap.teal   { background: rgba(20,184,166,.15); }
+    .service-icon-wrap.orange { background: rgba(249,115,22,.15); }
+    .service-name { font-size: 13.5px; font-weight: 700; margin-bottom: 5px; }
+    .service-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+    .service-tag  {
+      display: inline-flex; margin-top: 10px;
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 10.5px;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    /* ── Timeline ────────────────────────────────────────────────────────── */
+    .timeline { position: relative; padding-left: 28px; }
+    .timeline::before {
+      content: '';
+      position: absolute; left: 7px; top: 0; bottom: 0;
+      width: 2px;
+      background: var(--border);
+    }
+    .tl-item { position: relative; margin-bottom: 20px; }
+    .tl-dot {
+      position: absolute; left: -25px; top: 4px;
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid var(--bg-card);
+    }
+    .tl-dot.blue   { background: var(--accent);  box-shadow: 0 0 8px var(--accent); }
+    .tl-dot.green  { background: var(--green);   box-shadow: 0 0 8px var(--green); }
+    .tl-dot.yellow { background: var(--yellow);  box-shadow: 0 0 8px var(--yellow); }
+    .tl-dot.red    { background: var(--red);     box-shadow: 0 0 8px var(--red); }
+    .tl-dot.purple { background: var(--purple);  box-shadow: 0 0 8px var(--purple); }
+
+    .tl-time { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
+    .tl-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+    .tl-body { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+    /* ── Chart Bars ──────────────────────────────────────────────────────── */
+    .mini-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 64px;
+    }
+    .mini-bar {
+      flex: 1;
+      border-radius: 3px 3px 0 0;
+      transition: height 1s cubic-bezier(.4,0,.2,1);
+      min-height: 4px;
+    }
+    .chart-labels {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .chart-label {
+      flex: 1;
+      text-align: center;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* ── Donut ────────────────────────────────────────────────────────────── */
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .donut-legend { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .donut-legend-item {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12.5px;
+    }
+    .donut-legend-label { display: flex; align-items: center; gap: 8px; }
+    .donut-legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+    /* ── Scrollbar ───────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-surface); }
+    ::-webkit-scrollbar-thumb { background: var(--bg-card-alt); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-glow); }
+
+    /* ── Features page ───────────────────────────────────────────────────── */
+    .feature-hero {
+      background: linear-gradient(135deg, rgba(59,130,246,.08), rgba(139,92,246,.08));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 40px;
+      margin-bottom: 30px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; left: 50%; transform: translateX(-50%);
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(59,130,246,.15), transparent 70%);
+    }
+    .hero-title {
+      font-size: 32px; font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-light), var(--purple));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+    .hero-sub { font-size: 16px; color: var(--text-secondary); max-width: 600px; margin: 0 auto; }
+
+    .req-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      transition: all var(--transition);
+    }
+    .req-card:hover {
+      border-color: var(--border-glow);
+      box-shadow: 0 0 20px rgba(59,130,246,.08);
+    }
+    .req-num {
+      font-size: 11px; font-weight: 700; letter-spacing: .05em;
+      color: var(--accent-light);
+      margin-bottom: 6px;
+    }
+    .req-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .req-body { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; }
+
+    /* ── Responsive ──────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ── Table ───────────────────────────────────────────────────────────── */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th {
+      padding: 10px 14px;
+      text-align: left;
+      color: var(--text-muted);
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid rgba(99,179,237,.06);
+      vertical-align: middle;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: rgba(255,255,255,.02); }
+
+    /* ── Toggle ──────────────────────────────────────────────────────────── */
+    .toggle-wrap { display: flex; align-items: center; gap: 10px; }
+    .toggle {
+      width: 40px; height: 22px;
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      cursor: pointer;
+      position: relative;
+      transition: background var(--transition);
+    }
+    .toggle.on { background: var(--green); border-color: var(--green); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 16px; height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform var(--transition);
+      box-shadow: 0 1px 4px rgba(0,0,0,.3);
+    }
+    .toggle.on::after { transform: translateX(18px); }
+    .toggle-label { font-size: 13px; color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+
+<!-- ─── SIDEBAR ──────────────────────────────────────────────────────────── -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">⚡</div>
+      <div>
+        <div class="logo-text">Cascade <span>Prevention</span></div>
+        <div class="logo-sub">AI Resilience Engine v1.0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="nav-section">
+      <div class="nav-label">Overview</div>
+      <a class="nav-item active" onclick="showPage('dashboard')">
+        <span class="nav-icon">📊</span> Dashboard
+      </a>
+      <a class="nav-item" onclick="showPage('features')">
+        <span class="nav-icon">✨</span> Features &amp; Services
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Monitoring</div>
+      <a class="nav-item" onclick="showPage('dependency-graph')">
+        <span class="nav-icon">🕸️</span> Dependency Graph
+      </a>
+      <a class="nav-item" onclick="showPage('anomalies')">
+        <span class="nav-icon">🚨</span> Anomaly Detection
+        <span class="nav-badge">3</span>
+      </a>
+      <a class="nav-item" onclick="showPage('telemetry')">
+        <span class="nav-icon">📡</span> Telemetry
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Response</div>
+      <a class="nav-item" onclick="showPage('remediation')">
+        <span class="nav-icon">🔧</span> Remediation Plans
+        <span class="nav-badge yellow">2</span>
+      </a>
+      <a class="nav-item" onclick="showPage('circuit-breakers')">
+        <span class="nav-icon">⚙️</span> Circuit Breakers
+      </a>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Operations</div>
+      <a class="nav-item" onclick="showPage('history')">
+        <span class="nav-icon">📜</span> Incident History
+      </a>
+      <a class="nav-item" onclick="showPage('config')">
+        <span class="nav-icon">⚙️</span> Configuration
+      </a>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div><span class="status-dot"></span>System Operational</div>
+    <div style="margin-top:4px;color:var(--text-muted)">us-east-1 · 3 regions active</div>
+  </div>
+</nav>
+
+<!-- ─── MAIN CONTENT ─────────────────────────────────────────────────────── -->
+<div class="main">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div style="flex:1">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-subtitle" id="page-subtitle">System health overview • Last updated just now</div>
+    </div>
+    <div class="topbar-actions">
+      <div class="live-badge">
+        <span class="status-dot" style="width:6px;height:6px;margin:0"></span>
+        LIVE
+      </div>
+      <button class="btn btn-ghost" onclick="simulateCascade()">⚗️ Simulate</button>
+      <button class="btn btn-primary">+ New Policy</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PAGE: DASHBOARD
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div class="page active" id="page-dashboard">
+
+    <!-- Metric Cards -->
+    <div class="metrics-grid">
+      <div class="metric-card blue">
+        <div class="metric-icon">🏥</div>
+        <div class="metric-label">Overall Health Score</div>
+        <div class="metric-value blue" id="health-score">0.94</div>
+        <div class="metric-sub">System-wide average</div>
+        <div class="metric-trend up">↑ 2.1% vs yesterday</div>
+      </div>
+      <div class="metric-card green">
+        <div class="metric-icon">🛡️</div>
+        <div class="metric-label">Cascades Prevented</div>
+        <div class="metric-value green" id="cascades-prevented">147</div>
+        <div class="metric-sub">Last 30 days</div>
+        <div class="metric-trend up">↑ 12 this week</div>
+      </div>
+      <div class="metric-card yellow">
+        <div class="metric-icon">🔍</div>
+        <div class="metric-label">Active Signatures</div>
+        <div class="metric-value yellow" id="active-sigs">3</div>
+        <div class="metric-sub">Under investigation</div>
+        <div class="metric-trend down">↓ 2 resolved today</div>
+      </div>
+      <div class="metric-card red">
+        <div class="metric-icon">⏱️</div>
+        <div class="metric-label">MTTD (seconds)</div>
+        <div class="metric-value red">8.2s</div>
+        <div class="metric-sub">Mean time to detect</div>
+        <div class="metric-trend up">↑ 15% improvement</div>
+      </div>
+      <div class="metric-card purple">
+        <div class="metric-icon">🚀</div>
+        <div class="metric-label">MTTR (seconds)</div>
+        <div class="metric-value purple">32.4s</div>
+        <div class="metric-sub">Mean time to remediate</div>
+        <div class="metric-trend up">↑ Best this month</div>
+      </div>
+      <div class="metric-card blue">
+        <div class="metric-icon">📦</div>
+        <div class="metric-label">Services Monitored</div>
+        <div class="metric-value blue">284</div>
+        <div class="metric-sub">Across 3 regions</div>
+        <div class="metric-trend neutral">→ +6 this week</div>
+      </div>
+    </div>
+
+    <!-- Two-column: Activity chart + Service Health -->
+    <div class="two-col">
+
+      <!-- Cascade Activity Chart -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title-lg">Cascade Activity (7 days)</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Detections vs. preventions</div>
+          </div>
+          <span class="badge badge-green">↑ 94% prevention rate</span>
+        </div>
+        <div class="mini-chart" id="activity-chart">
+          <!-- bars rendered by JS -->
+        </div>
+        <div class="chart-labels" id="chart-labels"></div>
+      </div>
+
+      <!-- Service Health Breakdown -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-lg">Service Health</div>
+          <span class="badge badge-blue">Live</span>
+        </div>
+        <div id="health-bars"></div>
+      </div>
+    </div>
+
+    <!-- Three-column: Circuit Breakers, Prediction Confidence, Events -->
+    <div class="two-col">
+
+      <!-- Prediction Confidence Donut -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-lg">ML Model Confidence</div>
+          <span class="badge badge-teal">Bedrock + SageMaker</span>
+        </div>
+        <div class="donut-wrap">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="46" fill="none" stroke="var(--bg-base)" stroke-width="16"/>
+            <circle cx="60" cy="60" r="46" fill="none" stroke="var(--green)"
+              stroke-width="16" stroke-dasharray="180 109" stroke-dashoffset="-23" stroke-linecap="round"/>
+            <circle cx="60" cy="60" r="46" fill="none" stroke="var(--yellow)"
+              stroke-width="16" stroke-dasharray="62 227" stroke-dashoffset="-203" stroke-linecap="round"/>
+            <circle cx="60" cy="60" r="46" fill="none" stroke="var(--red)"
+              stroke-width="16" stroke-dasharray="47 242" stroke-dashoffset="-265" stroke-linecap="round"/>
+            <text x="60" y="54" text-anchor="middle" fill="var(--text-primary)" font-size="20" font-weight="800">94%</text>
+            <text x="60" y="70" text-anchor="middle" fill="var(--text-muted)" font-size="9">F1 Score</text>
+          </svg>
+          <div class="donut-legend">
+            <div class="donut-legend-item">
+              <div class="donut-legend-label"><div class="donut-legend-dot" style="background:var(--green)"></div> High confidence (&gt;0.8)</div>
+              <div style="font-weight:700">62%</div>
+            </div>
+            <div class="donut-legend-item">
+              <div class="donut-legend-label"><div class="donut-legend-dot" style="background:var(--yellow)"></div> Medium (0.5–0.8)</div>
+              <div style="font-weight:700">21%</div>
+            </div>
+            <div class="donut-legend-item">
+              <div class="donut-legend-label"><div class="donut-legend-dot" style="background:var(--red)"></div> Low (&lt;0.5)</div>
+              <div style="font-weight:700">17%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Events Feed -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-lg">Live Event Feed</div>
+          <button class="btn btn-ghost" style="font-size:12px;padding:5px 10px" onclick="clearEvents()">Clear</button>
+        </div>
+        <div class="event-list" id="event-feed" style="max-height:220px;overflow-y:auto;gap:7px">
+          <!-- populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Regional Status Table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-lg">Multi-Region Status</div>
+        <span class="badge badge-blue">3 regions active</span>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Region</th>
+            <th>Services</th>
+            <th>Health Score</th>
+            <th>Active Alerts</th>
+            <th>Cascades Prevented</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>us-east-1</strong> <span style="color:var(--text-muted);font-size:11px">N. Virginia</span></td>
+            <td>124</td>
+            <td><span class="badge badge-green">0.97</span></td>
+            <td>1</td>
+            <td>72</td>
+            <td><span class="badge badge-green">✓ Healthy</span></td>
+          </tr>
+          <tr>
+            <td><strong>us-west-2</strong> <span style="color:var(--text-muted);font-size:11px">Oregon</span></td>
+            <td>98</td>
+            <td><span class="badge badge-yellow">0.89</span></td>
+            <td>2</td>
+            <td>51</td>
+            <td><span class="badge badge-yellow">⚠ Monitoring</span></td>
+          </tr>
+          <tr>
+            <td><strong>eu-west-1</strong> <span style="color:var(--text-muted);font-size:11px">Ireland</span></td>
+            <td>62</td>
+            <td><span class="badge badge-green">0.95</span></td>
+            <td>0</td>
+            <td>24</td>
+            <td><span class="badge badge-green">✓ Healthy</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div><!-- /dashboard -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PAGE: FEATURES & SERVICES
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div class="page" id="page-features">
+    <div class="feature-hero">
+      <div class="hero-title">AI Cascade Prevention Engine</div>
+      <div class="hero-sub">An AI-driven resilience layer for AWS workloads that predicts and prevents cascading failures across microservices, data pipelines, and regions before they impact customers.</div>
+    </div>
+
+    <div class="section-header">
+      <div>
+        <div class="section-title">Core Services</div>
+        <div class="section-desc">The major components powering cascade prevention</div>
+      </div>
+    </div>
+
+    <div class="services-grid" style="margin-bottom:30px">
+      <div class="service-card">
+        <div class="service-icon-wrap blue">📡</div>
+        <div class="service-name">Telemetry Collector</div>
+        <div class="service-desc">Ingests CloudWatch Metrics, CloudWatch Logs, X-Ray traces, CloudTrail events, and custom Kinesis streams in real time.</div>
+        <span class="service-tag">≤5s processing latency</span>
+      </div>
+      <div class="service-card">
+        <div class="service-icon-wrap teal">🕸️</div>
+        <div class="service-name">Dependency Graph Engine</div>
+        <div class="service-desc">Maintains a live directed graph of all service dependencies. Supports 10,000+ nodes and 100,000+ edges per region.</div>
+        <span class="service-tag">DynamoDB • Neptune</span>
+      </div>
+      <div class="service-card">
+        <div class="service-icon-wrap purple">🔍</div>
+        <div class="service-name">Anomaly Detection Engine</div>
+        <div class="service-desc">ML-powered behavioral deviation detection using statistical bounds at 95th, 99th, and 99.9th percentiles per service.</div>
+        <span class="service-tag">7-day baseline learning</span>
+      </div>
+      <div class="service-card">
+        <div class="service-icon-wrap yellow">🔮</div>
+        <div class="service-name">Cascade Prediction Engine</div>
+        <div class="service-desc">Forecasts failure propagation paths through the dependency graph using Amazon Bedrock and SageMaker models.</div>
+        <span class="service-tag">Blast radius in ≤15s</span>
+      </div>
+      <div class="service-card">
+        <div class="service-icon-wrap orange">🔧</div>
+        <div class="service-name">Remediation Orchestrator</div>
+        <div class="service-desc">Generates and executes remediation plans via Step Functions with circuit breaking, traffic shifting, rate limiting, and rollbacks.</div>
+        <span class="service-tag">AWS Step Functions</span>
+      </div>
+      <div class="service-card">
+        <div class="service-icon-wrap red">⚙️</div>
+        <div class="service-name">Circuit Breaker System</div>
+        <div class="service-desc">Automatically stops requests to failing dependencies. Gradual traffic restoration after 10 consecutive successful health checks.</div>
+        <span class="service-tag">Lambda activated</span>
+      </div>
+      <div class="service-card">
+        <div class="service-icon-wrap blue">↔️</div>
+        <div class="service-name">Traffic Shifting</div>
+        <div class="service-desc">Redirects traffic via ALB target group weights and Route 53 policies. Gradual 60-second shifts with health monitoring.</div>
+        <span class="service-tag">ALB • Route 53</span>
+      </div>
+      <div class="service-card">
+        <div class="service-icon-wrap green">🌐</div>
+        <div class="service-name">Web Console</div>
+        <div class="service-desc">Interactive visualization of the dependency graph with real-time health scores, cascade timelines, and remediation approval workflows.</div>
+        <span class="service-tag">CloudFront • Cognito</span>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div>
+        <div class="section-title">All 26 Requirements</div>
+        <div class="section-desc">Complete feature coverage mapped to system requirements</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px" id="req-grid">
+      <!-- populated by JS -->
+    </div>
+  </div><!-- /features -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PAGE: DEPENDENCY GRAPH
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div class="page" id="page-dependency-graph">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Dependency Graph</div>
+        <div class="section-desc">Live service topology — 284 nodes, 1,842 edges across all regions</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost" onclick="resetGraph()">↺ Reset</button>
+        <button class="btn btn-primary" onclick="refreshGraph()">⟳ Refresh</button>
+      </div>
+    </div>
+
+    <!-- Graph Canvas -->
+    <div class="card" style="padding:16px;margin-bottom:18px">
+      <svg id="dep-graph-svg"></svg>
+      <div class="graph-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div><span>Healthy (&gt;0.9)</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div><span>Degraded (0.7–0.9)</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div><span>Critical (&lt;0.7)</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div><span>Blast Radius</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--text-muted)"></div><span>Inactive</span></div>
+      </div>
+    </div>
+
+    <!-- Service Detail Table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-lg">Service Nodes</div>
+        <span class="badge badge-blue">284 total</span>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Type</th>
+            <th>Health Score</th>
+            <th>Errors/min</th>
+            <th>Latency P99</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="node-table"></tbody>
+      </table>
+    </div>
+  </div><!-- /dependency-graph -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PAGE: ANOMALY DETECTION
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div class="page" id="page-anomalies">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Anomaly Detection</div>
+        <div class="section-desc">Active cascade signatures and behavioral deviations</div>
+      </div>
+      <span class="badge badge-red" style="font-size:13px;padding:6px 14px">3 Active Signatures</span>
+    </div>
+
+    <div id="anomaly-cards" style="margin-bottom:22px"></div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-lg">Detection Thresholds</div>
+        </div>
+        <div id="threshold-bars"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-lg">Detection History (24h)</div>
+        </div>
+        <div class="mini-chart" id="detection-chart" style="height:80px"></div>
+        <div class="chart-labels" id="detection-labels"></div>
+      </div>
+    </div>
+  </div><!-- /anomalies -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PAGE: TELEMETRY
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div class="page" id="page-telemetry">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Telemetry Ingestion</div>
+        <div class="section-desc">Real-time signals from all AWS monitoring sources</div>
+      </div>
+    </div>
+
+    <div class="metrics-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="metric-card blue">
+        <div class="metric-label">CloudWatch Metrics</div>
+        <div class="metric-value blue" style="font-size:24px">28.4K</div>
+        <div class="metric-sub">events/sec</div>
+      </div>
+      <div class="metric-card teal" style="--border-fill:var(--teal)">
+        <div class="metric-label">X-Ray Traces</div>
+        <div class="metric-value" style="font-size:24px;color:var(--teal)">12.1K</div>
+        <div class="metric-sub">traces/sec</div>
+      </div>
+      <div class="metric-card purple">
+        <div class="metric-label">CloudTrail Events</div>
+        <div class="metric-value purple" style="font-size:24px">4.7K</div>
+        <div class="metric-sub">events/sec</div>
+      </div>
+      <div class="metric-card yellow">
+        <div class="metric-label">Kinesis Streams</div>
+        <div class="metric-value yellow" style="font-size:24px">18.9K</div>
+        <div class="metric-sub">events/sec</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-lg">Ingestion Pipeline</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px" id="pipeline-status"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title-lg">Storage Utilization</div>
+        </div>
+        <div id="storage-bars"></div>
+      </div>
+    </div>
+  </div><!-- /telemetry -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PAGE: REMEDIATION PLANS
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div class="page" id="page-remediation">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Remediation Plans</div>
+        <div class="section-desc">Pending approvals and recently executed plans</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--yellow);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+          <span>⏳</span> Pending Approval (2)
+        </div>
+        <div id="pending-plans"></div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+          <span>✓</span> Recently Executed
+        </div>
+        <div id="executed-plans"></div>
+      </div>
+    </div>
+  </div><!-- /remediation -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PAGE: CIRCUIT BREAKERS
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div class="page" id="page-circuit-breakers">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Circuit Breakers</div>
+        <div class="section-desc">Real-time circuit breaker states across all services</div>
+      </div>
+    </div>
+
+    <div id="cb-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:22px"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-lg">Circuit Breaker Activity (48h)</div>
+      </div>
+      <div class="timeline" id="cb-timeline"></div>
+    </div>
+  </div><!-- /circuit-breakers -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PAGE: INCIDENT HISTORY
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div class="page" id="page-history">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Incident History</div>
+        <div class="section-desc">Cascade events, preventions, and post-incident reports</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="timeline" id="incident-timeline"></div>
+    </div>
+  </div><!-- /history -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       PAGE: CONFIGURATION
+  ════════════════════════════════════════════════════════════════════════ -->
+  <div class="page" id="page-config">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Configuration</div>
+        <div class="section-desc">System thresholds, automation rules, and operational modes</div>
+      </div>
+      <button class="btn btn-primary" onclick="saveConfig()">💾 Save Changes</button>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><div class="card-title-lg">Detection Thresholds</div></div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+              <span>Auto-remediation confidence threshold</span>
+              <span style="color:var(--accent-light);font-weight:700">0.80</span>
+            </div>
+            <input type="range" min="0" max="100" value="80" style="width:100%;accent-color:var(--accent)">
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+              <span>Error rate deviation (std dev)</span>
+              <span style="color:var(--accent-light);font-weight:700">3.0σ</span>
+            </div>
+            <input type="range" min="1" max="50" value="30" style="width:100%;accent-color:var(--accent)">
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+              <span>Latency spike threshold</span>
+              <span style="color:var(--accent-light);font-weight:700">50%</span>
+            </div>
+            <input type="range" min="10" max="100" value="50" style="width:100%;accent-color:var(--accent)">
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+              <span>Traffic drop threshold</span>
+              <span style="color:var(--accent-light);font-weight:700">80%</span>
+            </div>
+            <input type="range" min="20" max="100" value="80" style="width:100%;accent-color:var(--accent)">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title-lg">Automation Settings</div></div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="toggle-wrap">
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            <span class="toggle-label">Auto-execute remediation plans</span>
+          </div>
+          <div class="toggle-wrap">
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            <span class="toggle-label">Automatic circuit breaking</span>
+          </div>
+          <div class="toggle-wrap">
+            <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            <span class="toggle-label">Safe mode auto-activation</span>
+          </div>
+          <div class="toggle-wrap">
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            <span class="toggle-label">Multi-region coordination</span>
+          </div>
+          <div class="toggle-wrap">
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            <span class="toggle-label">SNS alert notifications</span>
+          </div>
+          <div class="toggle-wrap">
+            <div class="toggle" onclick="this.classList.toggle('on')"></div>
+            <span class="toggle-label">Simulation / dry-run mode</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title-lg">ML Model Settings</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px">
+        <div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">Retraining frequency</div>
+          <select style="width:100%;background:var(--bg-base);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px">
+            <option>Monthly (recommended)</option>
+            <option>Weekly</option>
+            <option>Bi-monthly</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">Training data window</div>
+          <select style="width:100%;background:var(--bg-base);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px">
+            <option>90 days (recommended)</option>
+            <option>30 days</option>
+            <option>180 days</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">Model promotion threshold (F1)</div>
+          <select style="width:100%;background:var(--bg-base);color:var(--text-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px">
+            <option>+5% improvement</option>
+            <option>+3% improvement</option>
+            <option>+10% improvement</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div><!-- /config -->
+
+</div><!-- /main -->
+
+<!-- ─── JAVASCRIPT ─────────────────────────────────────────────────────────── -->
+<script>
+// ── Navigation ────────────────────────────────────────────────────────────────
+const pageMeta = {
+  'dashboard':        { title: 'Dashboard',           sub: 'System health overview' },
+  'features':         { title: 'Features & Services', sub: 'Core components and all 26 requirements' },
+  'dependency-graph': { title: 'Dependency Graph',    sub: 'Live service topology visualization' },
+  'anomalies':        { title: 'Anomaly Detection',   sub: 'Active cascade signatures' },
+  'telemetry':        { title: 'Telemetry Ingestion', sub: 'Real-time signal monitoring' },
+  'remediation':      { title: 'Remediation Plans',   sub: 'Approve, reject, or modify plans' },
+  'circuit-breakers': { title: 'Circuit Breakers',    sub: 'Automated failure containment' },
+  'history':          { title: 'Incident History',    sub: 'Cascade events and outcomes' },
+  'config':           { title: 'Configuration',       sub: 'Thresholds, rules, and automation' },
+};
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + id + "'")) n.classList.add('active');
+  });
+  const meta = pageMeta[id] || {};
+  document.getElementById('page-title').textContent = meta.title || id;
+  document.getElementById('page-subtitle').textContent = (meta.sub || '') + ' • Last updated just now';
+}
+
+// ── Activity Chart ─────────────────────────────────────────────────────────────
+const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const detected  = [8,5,12,7,3,9,6];
+const prevented = [7,5,11,6,3,8,6];
+const chartEl   = document.getElementById('activity-chart');
+const labelsEl  = document.getElementById('chart-labels');
+const max = Math.max(...detected);
+
+days.forEach((d, i) => {
+  const pct = Math.round((detected[i] / max) * 100);
+  const bar = document.createElement('div');
+  bar.className = 'mini-bar';
+  bar.style.background = `linear-gradient(to top, var(--accent), var(--teal))`;
+  bar.style.height = '0';
+  bar.style.opacity = '.85';
+  chartEl.appendChild(bar);
+  setTimeout(() => { bar.style.height = pct + '%'; }, 100 + i * 80);
+
+  const lbl = document.createElement('div');
+  lbl.className = 'chart-label';
+  lbl.textContent = d;
+  labelsEl.appendChild(lbl);
+});
+
+// ── Health Bars ───────────────────────────────────────────────────────────────
+const services = [
+  { name: 'API Gateway',       score: 0.97, cls: 'good' },
+  { name: 'Order Service',     score: 0.91, cls: 'good' },
+  { name: 'Payment Service',   score: 0.76, cls: 'warning' },
+  { name: 'Inventory Service', score: 0.89, cls: 'good' },
+  { name: 'Auth Service',      score: 0.58, cls: 'danger' },
+  { name: 'Notification Svc',  score: 0.93, cls: 'good' },
+];
+const hbEl = document.getElementById('health-bars');
+services.forEach(s => {
+  hbEl.innerHTML += `
+    <div class="health-bar-wrap">
+      <div class="health-bar-label">
+        <span>${s.name}</span>
+        <span style="font-weight:700;color:${s.cls==='good'?'var(--green)':s.cls==='warning'?'var(--yellow)':'var(--red)'}">${s.score}</span>
+      </div>
+      <div class="health-bar-track">
+        <div class="health-bar-fill ${s.cls}" style="width:0" data-w="${s.score*100}"></div>
+      </div>
+    </div>`;
+});
+setTimeout(() => {
+  document.querySelectorAll('.health-bar-fill').forEach(b => { b.style.width = b.dataset.w + '%'; });
+}, 300);
+
+// ── Live Event Feed ───────────────────────────────────────────────────────────
+const events = [
+  { type:'critical', title:'Cascade Signature Detected', desc:'Auth Service → Payment latency spike (+180%)', time:'just now' },
+  { type:'warning',  title:'Circuit Breaker Activated',   desc:'Auth Service → circuit open, traffic rerouted', time:'1m ago' },
+  { type:'info',     title:'Remediation Plan Generated',  desc:'Plan #CPE-2024-042: Rate limit + traffic shift', time:'1m ago' },
+  { type:'success',  title:'Blast Radius Contained',      desc:'Order Service protected via circuit isolation', time:'3m ago' },
+  { type:'info',     title:'ML Model Retrained',           desc:'F1 score improved by 6.2pp (0.94 → 0.998) — model promoted to production', time:'1h ago' },
+  { type:'success',  title:'Traffic Shift Completed',     desc:'100% traffic restored to us-east-1 Payment', time:'2h ago' },
+];
+const feedEl = document.getElementById('event-feed');
+function renderEvents() {
+  feedEl.innerHTML = events.map(e => `
+    <div class="event-item">
+      <div class="event-dot ${e.type}"></div>
+      <div class="event-body">
+        <div class="event-title">${e.title}</div>
+        <div class="event-desc">${e.desc}</div>
+      </div>
+      <div class="event-time">${e.time}</div>
+    </div>`).join('');
+}
+renderEvents();
+function clearEvents() { events.length = 0; renderEvents(); }
+
+// ── Requirements Grid ─────────────────────────────────────────────────────────
+const requirements = [
+  { n:'REQ 1',  title:'Dependency Graph Construction', body:'Auto-discovers and maps all service dependencies via X-Ray, CloudTrail, and CloudWatch. Updates within 60 seconds. 90-day historical snapshots.' },
+  { n:'REQ 2',  title:'Telemetry Ingestion',           body:'Collects CloudWatch Metrics/Logs, X-Ray traces, CloudTrail events, and Kinesis streams. Processes within 5 seconds with exponential backoff retry.' },
+  { n:'REQ 3',  title:'Normal Behavior Learning',      body:'7-day minimum baseline with time-of-day/seasonal patterns. Updated every 24h using 30 days of data. Separate baselines per service.' },
+  { n:'REQ 4',  title:'Cascade Signature Detection',   body:'Detects error spikes (3σ), latency increases (50%+), traffic drops (80%+), and connection pool exhaustion. Emits events within 10s.' },
+  { n:'REQ 5',  title:'Cascade Path Prediction',       body:'Computes propagation paths, ranks by likelihood, estimates time-to-impact per service. Uses Bedrock/SageMaker. Blast radius in ≤15s.' },
+  { n:'REQ 6',  title:'Remediation Plan Generation',   body:'Generates ordered plans in ≤10s with rollback steps. Alternative plans, impact estimation, manual approval support.' },
+  { n:'REQ 7',  title:'Automated Circuit Breaking',    body:'Lambda-activated circuit breakers. 5% health-check traffic passthrough. Gradual 120s restoration. Escalation at 600s.' },
+  { n:'REQ 8',  title:'Traffic Shifting',              body:'ALB target group weights and Route 53 policies. 60-second gradual shift with health monitoring. Pauses if target health drops below 0.7.' },
+  { n:'REQ 9',  title:'Rate Limiting',                 body:'API Gateway throttling and AWS WAF rules. Capacity-based limits applied in ≤15s. 10% incremental relief every 60s on recovery.' },
+  { n:'REQ 10', title:'Safe Rollback Execution',       body:'Correlates deployment events via CloudTrail. CodeDeploy, ECS, and EKS rollback in ≤45s. Post-rollback health verification for 180s.' },
+  { n:'REQ 11', title:'Safe Mode Activation',          body:'Activates when ≥50% of customer-facing services at risk. Feature flag disabling, resource prioritization, manual override via console.' },
+  { n:'REQ 12', title:'Step Functions Orchestration',  body:'Step Functions state machines for plans with 3+ actions. Error handling, retry logic, 300s execution limit, DynamoDB audit history.' },
+  { n:'REQ 13', title:'Multi-Region Coordination',     body:'Cross-region dependency graph via EventBridge global endpoints. 30s sync, regional containment priority, continued operation on region failure.' },
+  { n:'REQ 14', title:'ML Model Training & Updates',   body:'Monthly retraining with 90 days of data. Auto-promotion at +5% F1 improvement. Model versioning and rollback. SageMaker + Bedrock.' },
+  { n:'REQ 15', title:'API & Integration Interface',   body:'REST API via API Gateway with IAM/Cognito auth. OpenAPI docs, EventBridge events, webhook support. 1,000 req/min rate limiting.' },
+  { n:'REQ 16', title:'Web Console & Visualization',   body:'CloudFront/S3-hosted console with interactive dependency graph. Real-time health scores, timeline, approval workflows. Cognito MFA.' },
+  { n:'REQ 17', title:'Security & Access Control',     body:'Least-privilege IAM, KMS encryption at rest, TLS 1.2+ in transit. CloudTrail logging, Secrets Manager, 3600s session timeout.' },
+  { n:'REQ 18', title:'Alerting & Escalation',         body:'SNS alerts when confidence > 0.8. PagerDuty/Slack integration via EventBridge. 5-level severity, 600s dedup, actionable context.' },
+  { n:'REQ 19', title:'Metrics & Observability',       body:'Custom CloudWatch metrics for detection/prevention rates, MTTD, MTTR, model accuracy. JSON structured logs. 455-day retention.' },
+  { n:'REQ 20', title:'Configuration & Customization', body:'Per-service thresholds via DynamoDB/SSM. Config validation, 60s apply time, 90-day history, JSON/YAML import/export.' },
+  { n:'REQ 21', title:'Testing & Simulation',          body:'Simulation mode, synthetic signature injection, dry-run, historical replay, A/B model testing. Clear labeling in logs and console.' },
+  { n:'REQ 22', title:'Cost Optimization',             body:'S3 Intelligent-Tiering, DynamoDB auto-scaling, Lambda event-driven, SageMaker Spot training. Cost tags for all resources.' },
+  { n:'REQ 23', title:'Compliance & Audit',            body:'Full audit trails for all detections, plans, actions, and config changes. CloudWatch + CloudTrail for 2,555 days. S3 export.' },
+  { n:'REQ 24', title:'Deployment (IaC)',               body:'CloudFormation and Terraform templates. Multi-account/region parameterization, blue-green deployments, ≤30min single-region deploy.' },
+  { n:'REQ 25', title:'Performance & Scalability',     body:'10K+ nodes, 100K+ edges per region. 100K events/sec ingestion. Sub-10s anomaly analysis. Sub-second P95 API responses.' },
+  { n:'REQ 26', title:'Documentation & Onboarding',    body:'Architecture docs, runbooks, API docs with examples, ML model docs, deployment guides, troubleshooting guides, video tutorials.' },
+];
+
+const reqGrid = document.getElementById('req-grid');
+requirements.forEach((r, i) => {
+  const colors = ['blue','green','purple','yellow','red','teal','orange'];
+  const c = colors[i % colors.length];
+  reqGrid.innerHTML += `
+    <div class="req-card">
+      <div class="req-num">${r.n} <span class="badge badge-${c}" style="margin-left:6px">${c === 'blue' ? 'core' : c === 'green' ? 'active' : c === 'purple' ? 'ml' : c === 'yellow' ? 'ops' : c === 'red' ? 'security' : c === 'teal' ? 'api' : 'infra'}</span></div>
+      <div class="req-title">${r.title}</div>
+      <div class="req-body">${r.body}</div>
+    </div>`;
+});
+
+// ── Dependency Graph SVG ──────────────────────────────────────────────────────
+const graphNodes = [
+  { id:'apigw',    label:'API Gateway',       x:280, y:60,  health:0.97, color:'#10b981' },
+  { id:'auth',     label:'Auth Service',      x:100, y:160, health:0.58, color:'#ef4444' },
+  { id:'order',    label:'Order Service',     x:280, y:160, health:0.91, color:'#10b981' },
+  { id:'payment',  label:'Payment Service',   x:460, y:160, health:0.76, color:'#f59e0b' },
+  { id:'invt',     label:'Inventory',         x:180, y:280, health:0.89, color:'#10b981' },
+  { id:'notify',   label:'Notification',      x:360, y:280, health:0.93, color:'#10b981' },
+  { id:'dynamo',   label:'DynamoDB',          x:100, y:380, health:0.99, color:'#10b981' },
+  { id:'s3',       label:'S3 / Telemetry',    x:280, y:380, health:0.99, color:'#10b981' },
+  { id:'rds',      label:'RDS Aurora',        x:460, y:380, health:0.82, color:'#10b981' },
+];
+const graphEdges = [
+  ['apigw','auth'],['apigw','order'],['apigw','payment'],
+  ['order','invt'],['order','notify'],['order','payment'],
+  ['payment','rds'],['invt','dynamo'],['notify','s3'],
+  ['auth','dynamo'],
+];
+
+function drawGraph() {
+  const svg = document.getElementById('dep-graph-svg');
+  const W = svg.clientWidth || 640;
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+
+  // Defs (arrowhead marker)
+  const defs = document.createElementNS(ns,'defs');
+  const mk = document.createElementNS(ns,'marker');
+  mk.setAttribute('id','arrow'); mk.setAttribute('markerWidth','8'); mk.setAttribute('markerHeight','6');
+  mk.setAttribute('refX','8'); mk.setAttribute('refY','3'); mk.setAttribute('orient','auto');
+  const poly = document.createElementNS(ns,'polygon');
+  poly.setAttribute('points','0 0, 8 3, 0 6'); poly.setAttribute('fill','#3b82f680');
+  mk.appendChild(poly); defs.appendChild(mk); svg.appendChild(defs);
+
+  // Edges
+  graphEdges.forEach(([a, b]) => {
+    const n1 = graphNodes.find(n => n.id === a);
+    const n2 = graphNodes.find(n => n.id === b);
+    const line = document.createElementNS(ns,'line');
+    line.setAttribute('x1', n1.x); line.setAttribute('y1', n1.y);
+    line.setAttribute('x2', n2.x); line.setAttribute('y2', n2.y);
+    line.setAttribute('stroke','#3b82f640'); line.setAttribute('stroke-width','1.5');
+    line.setAttribute('marker-end','url(#arrow)');
+    svg.appendChild(line);
+  });
+
+  // Nodes
+  graphNodes.forEach(n => {
+    const g = document.createElementNS(ns,'g');
+    g.setAttribute('transform',`translate(${n.x},${n.y})`);
+    g.style.cursor = 'pointer';
+
+    const circle = document.createElementNS(ns,'circle');
+    circle.setAttribute('r','22'); circle.setAttribute('fill', n.color + '22');
+    circle.setAttribute('stroke', n.color); circle.setAttribute('stroke-width','2');
+    g.appendChild(circle);
+
+    const glowCircle = document.createElementNS(ns,'circle');
+    glowCircle.setAttribute('r','28'); glowCircle.setAttribute('fill','none');
+    glowCircle.setAttribute('stroke', n.color + '33'); glowCircle.setAttribute('stroke-width','6');
+    g.insertBefore(glowCircle, circle);
+
+    const text = document.createElementNS(ns,'text');
+    text.setAttribute('text-anchor','middle'); text.setAttribute('dy','5');
+    text.setAttribute('fill','#f0f6ff'); text.setAttribute('font-size','9');
+    text.setAttribute('font-family','Inter,system-ui,sans-serif');
+    text.setAttribute('font-weight','700'); text.textContent = n.label;
+    g.appendChild(text);
+
+    const score = document.createElementNS(ns,'text');
+    score.setAttribute('text-anchor','middle'); score.setAttribute('dy','22');
+    score.setAttribute('fill', n.color); score.setAttribute('font-size','8');
+    score.setAttribute('font-family','Inter,system-ui,sans-serif');
+    score.textContent = n.health.toFixed(2);
+    g.appendChild(score);
+
+    svg.appendChild(g);
+  });
+}
+setTimeout(drawGraph, 100);
+
+// ── Node Table ────────────────────────────────────────────────────────────────
+const nodeData = [
+  { name:'API Gateway',      type:'AWS Managed',   health:0.97, errors:0.2,  latency:'12ms',   status:'healthy' },
+  { name:'Auth Service',     type:'ECS Fargate',   health:0.58, errors:18.4, latency:'2,400ms', status:'critical' },
+  { name:'Order Service',    type:'ECS Fargate',   health:0.91, errors:1.1,  latency:'145ms',  status:'healthy' },
+  { name:'Payment Service',  type:'Lambda',        health:0.76, errors:5.8,  latency:'890ms',  status:'degraded' },
+  { name:'Inventory Service',type:'ECS Fargate',   health:0.89, errors:2.3,  latency:'201ms',  status:'healthy' },
+  { name:'Notification Svc', type:'Lambda',        health:0.93, errors:0.6,  latency:'88ms',   status:'healthy' },
+  { name:'DynamoDB',         type:'AWS Managed',   health:0.99, errors:0.0,  latency:'4ms',    status:'healthy' },
+  { name:'S3 / Telemetry',   type:'AWS Managed',   health:0.99, errors:0.0,  latency:'8ms',    status:'healthy' },
+  { name:'RDS Aurora',       type:'AWS Managed',   health:0.82, errors:3.1,  latency:'340ms',  status:'degraded' },
+];
+const ntBody = document.getElementById('node-table');
+nodeData.forEach(n => {
+  const sc = n.status === 'healthy' ? 'green' : n.status === 'critical' ? 'red' : 'yellow';
+  const esc = n.errors > 10 ? 'red' : n.errors > 3 ? 'yellow' : 'green';
+  ntBody.innerHTML += `<tr>
+    <td><strong>${n.name}</strong></td>
+    <td><span style="color:var(--text-muted)">${n.type}</span></td>
+    <td><span class="badge badge-${sc}">${n.health}</span></td>
+    <td><span class="badge badge-${esc}">${n.errors}/min</span></td>
+    <td style="color:var(--text-muted)">${n.latency}</td>
+    <td><span class="badge badge-${sc}">${n.status.charAt(0).toUpperCase()+n.status.slice(1)}</span></td>
+  </tr>`;
+});
+
+// ── Anomaly Cards ──────────────────────────────────────────────────────────────
+const anomalies = [
+  {
+    id:'SIG-2024-042', confidence:0.91, service:'Auth Service',
+    type:'Error rate spike + latency', severity:'critical',
+    desc:'Auth Service error rate increased to 18.4/min (baseline: 0.3/min), latency P99 at 2.4s (baseline: 120ms). Cascade propagation risk: HIGH. Predicted blast radius includes Order Service, Payment Service.',
+    blast:['Order Service','Payment Service','API Gateway'],
+  },
+  {
+    id:'SIG-2024-041', confidence:0.73, service:'Payment Service',
+    type:'Connection pool exhaustion', severity:'warning',
+    desc:'Payment Service connection pool at 94% capacity. Upstream traffic normal. Pattern matches pre-cascade signature #12 with 73% confidence.',
+    blast:['Order Service','Notification Service'],
+  },
+  {
+    id:'SIG-2024-040', confidence:0.62, service:'RDS Aurora',
+    type:'Latency increase', severity:'warning',
+    desc:'RDS Aurora query latency P99 increased 48% over 15 minutes. Approaching 50% threshold for cascade signature trigger.',
+    blast:['Payment Service','Inventory Service'],
+  },
+];
+const acEl = document.getElementById('anomaly-cards');
+anomalies.forEach(a => {
+  const sc = a.severity === 'critical' ? 'red' : 'yellow';
+  acEl.innerHTML += `
+  <div class="plan-card" style="margin-bottom:14px;border-left:3px solid var(--${sc})">
+    <div class="plan-header">
+      <div>
+        <div class="plan-name">${a.id} — ${a.service}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${a.type}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="badge badge-${sc}">${a.severity.toUpperCase()}</div>
+        <div style="font-size:12px;margin-top:4px">Confidence: <strong style="color:var(--teal)">${a.confidence}</strong></div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--text-secondary);line-height:1.55;margin-bottom:12px">${a.desc}</div>
+    <div>
+      <span style="font-size:12px;color:var(--text-muted)">Predicted blast radius: </span>
+      ${a.blast.map(b => `<span class="badge badge-purple" style="margin:2px">${b}</span>`).join('')}
+    </div>
+    <div class="plan-actions" style="margin-top:12px">
+      <button class="btn btn-primary" style="font-size:12px">View Remediation Plan</button>
+      <button class="btn btn-ghost" style="font-size:12px">Dismiss</button>
+    </div>
+  </div>`;
+});
+
+// Threshold bars
+const thresholds = [
+  { label:'Error Rate Deviation',     current:3.2, max:5, cls:'warning' },
+  { label:'Latency Threshold',        current:4.1, max:5, cls:'danger' },
+  { label:'Traffic Drop Threshold',   current:1.8, max:5, cls:'good' },
+  { label:'Connection Pool Usage',    current:4.7, max:5, cls:'danger' },
+];
+const tbEl = document.getElementById('threshold-bars');
+thresholds.forEach(t => {
+  tbEl.innerHTML += `<div class="health-bar-wrap">
+    <div class="health-bar-label"><span>${t.label}</span>
+      <span style="font-weight:700;color:${t.cls==='good'?'var(--green)':t.cls==='warning'?'var(--yellow)':'var(--red)'}">${t.current}/${t.max}</span>
+    </div>
+    <div class="health-bar-track">
+      <div class="health-bar-fill ${t.cls}" style="width:0" data-w="${(t.current/t.max)*100}"></div>
+    </div>
+  </div>`;
+});
+setTimeout(() => {
+  document.querySelectorAll('#threshold-bars .health-bar-fill').forEach(b => { b.style.width = b.dataset.w + '%'; });
+}, 400);
+
+// Detection activity chart
+const dcEl = document.getElementById('detection-chart');
+const dlEl = document.getElementById('detection-labels');
+const hours = ['00','03','06','09','12','15','18','21','now'];
+const dcVals = [2,1,4,8,12,6,9,14,3];
+const dcMax = Math.max(...dcVals);
+hours.forEach((h, i) => {
+  const bar = document.createElement('div');
+  bar.className = 'mini-bar';
+  const v = dcVals[i] / dcMax;
+  bar.style.background = v > .7 ? 'var(--red)' : v > .4 ? 'var(--yellow)' : 'var(--accent)';
+  bar.style.height = '0';
+  dcEl.appendChild(bar);
+  setTimeout(() => { bar.style.height = (v * 100) + '%'; }, 150 + i * 60);
+
+  const lbl = document.createElement('div'); lbl.className = 'chart-label'; lbl.textContent = h;
+  dlEl.appendChild(lbl);
+});
+
+// ── Telemetry Pipeline ─────────────────────────────────────────────────────────
+const pipeline = [
+  { name:'CloudWatch Metrics Stream', status:'active', rate:'28,400/s', latency:'2.1s' },
+  { name:'CloudWatch Logs Subscr.',   status:'active', rate:'8,200/s',  latency:'1.8s' },
+  { name:'X-Ray Trace API',           status:'active', rate:'12,100/s', latency:'3.4s' },
+  { name:'CloudTrail → EventBridge',  status:'active', rate:'4,700/s',  latency:'1.2s' },
+  { name:'Kinesis Data Streams',      status:'active', rate:'18,900/s', latency:'0.9s' },
+];
+const psEl = document.getElementById('pipeline-status');
+pipeline.forEach(p => {
+  psEl.innerHTML += `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-card-alt);border-radius:var(--radius-sm);border:1px solid var(--border)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="status-dot"></span>
+      <span style="font-size:13px;font-weight:600">${p.name}</span>
+    </div>
+    <div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted)">
+      <span>${p.rate}</span>
+      <span style="color:var(--text-muted)">p99: ${p.latency}</span>
+      <span class="badge badge-green">${p.status}</span>
+    </div>
+  </div>`;
+});
+
+// Storage bars
+const storageItems = [
+  { label:'TelemetryBucket (S3)',         used:68, cls:'warning' },
+  { label:'SnapshotBucket (S3)',           used:41, cls:'good' },
+  { label:'TelemetryCache (DynamoDB)',     used:23, cls:'good' },
+  { label:'DependencyGraph (DynamoDB)',    used:55, cls:'good' },
+  { label:'CircuitBreakerState (Dynamo)', used:12, cls:'good' },
+];
+const sbEl = document.getElementById('storage-bars');
+storageItems.forEach(s => {
+  sbEl.innerHTML += `<div class="health-bar-wrap">
+    <div class="health-bar-label"><span>${s.label}</span><span style="font-weight:600">${s.used}% used</span></div>
+    <div class="health-bar-track">
+      <div class="health-bar-fill ${s.cls}" style="width:0" data-w="${s.used}"></div>
+    </div>
+  </div>`;
+});
+setTimeout(() => {
+  document.querySelectorAll('#storage-bars .health-bar-fill').forEach(b => { b.style.width = b.dataset.w + '%'; });
+}, 400);
+
+// ── Remediation Plans ──────────────────────────────────────────────────────────
+const pendingPlans = [
+  {
+    id:'CPE-2024-042', target:'Auth Service → cascades',
+    conf:0.91, actions:['Activate Circuit Breaker (Auth)', 'Shift 30% traffic to eu-west-1', 'Rate limit Auth API: 200 req/s'],
+    impact:'~5% latency increase on Order Service for 60s',
+  },
+  {
+    id:'CPE-2024-041', target:'Payment Service connections',
+    conf:0.73, actions:['Rate limit Payment API: 500 req/s', 'Scale out Payment Service (2→4 tasks)', 'Pre-warm RDS connection pool'],
+    impact:'~2% reduction in payment throughput for 30s',
+  },
+];
+const ppEl = document.getElementById('pending-plans');
+pendingPlans.forEach(p => {
+  ppEl.innerHTML += `<div class="plan-card">
+    <div class="plan-header">
+      <div><div class="plan-name">${p.id}</div><div style="font-size:12px;color:var(--text-muted)">${p.target}</div></div>
+      <div class="plan-confidence">Confidence: ${p.conf}</div>
+    </div>
+    <div class="plan-steps">
+      ${p.actions.map((a,i) => `<div class="plan-step"><div class="step-num">${i+1}</div>${a}</div>`).join('')}
+    </div>
+    <div style="font-size:12px;color:var(--yellow);margin-top:10px">⚠️ Estimated impact: ${p.impact}</div>
+    <div class="plan-actions">
+      <button class="btn btn-success" style="font-size:12px" onclick="approvePlan(this)">✓ Approve</button>
+      <button class="btn btn-danger"  style="font-size:12px" onclick="rejectPlan(this)">✕ Reject</button>
+      <button class="btn btn-ghost"   style="font-size:12px">✏️ Modify</button>
+    </div>
+  </div>`;
+});
+
+const executedPlans = [
+  { id:'CPE-2024-039', desc:'RDS Aurora failover prevention', status:'success', duration:'28s', time:'2h ago' },
+  { id:'CPE-2024-038', desc:'Inventory Service rate limiting',  status:'success', duration:'14s', time:'5h ago' },
+  { id:'CPE-2024-037', desc:'us-west-2 traffic isolation',      status:'partial', duration:'67s', time:'1d ago' },
+];
+const epEl = document.getElementById('executed-plans');
+executedPlans.forEach(p => {
+  const sc = p.status === 'success' ? 'green' : 'yellow';
+  epEl.innerHTML += `<div class="plan-card">
+    <div class="plan-header">
+      <div><div class="plan-name">${p.id}</div><div style="font-size:12px;color:var(--text-muted)">${p.desc}</div></div>
+      <span class="badge badge-${sc}">${p.status}</span>
+    </div>
+    <div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted);margin-top:4px">
+      <span>⏱ Duration: ${p.duration}</span>
+      <span>🕐 ${p.time}</span>
+    </div>
+  </div>`;
+});
+
+// ── Circuit Breaker Grid ───────────────────────────────────────────────────────
+const cbs = [
+  { name:'Auth Service',     state:'OPEN',     since:'8m ago',   health:0.58, reqAllowed:'5%' },
+  { name:'Payment Service',  state:'HALF-OPEN', since:'2m ago',  health:0.76, reqAllowed:'50%' },
+  { name:'Order Service',    state:'CLOSED',   since:'stable',   health:0.91, reqAllowed:'100%' },
+  { name:'Inventory Service',state:'CLOSED',   since:'stable',   health:0.89, reqAllowed:'100%' },
+  { name:'RDS Aurora',       state:'HALF-OPEN', since:'15m ago', health:0.82, reqAllowed:'30%' },
+  { name:'Notification Svc', state:'CLOSED',   since:'stable',   health:0.93, reqAllowed:'100%' },
+];
+const cbGrid = document.getElementById('cb-grid');
+cbs.forEach(cb => {
+  const sc = cb.state === 'OPEN' ? 'red' : cb.state === 'HALF-OPEN' ? 'yellow' : 'green';
+  cbGrid.innerHTML += `<div class="service-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+      <div class="service-name">${cb.name}</div>
+      <span class="badge badge-${sc}">${cb.state}</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:7px;font-size:12.5px;color:var(--text-secondary)">
+      <div>Health Score: <strong style="color:${cb.state==='OPEN'?'var(--red)':cb.state==='HALF-OPEN'?'var(--yellow)':'var(--green)'}">${cb.health}</strong></div>
+      <div>Traffic Allowed: <strong>${cb.reqAllowed}</strong></div>
+      <div>Since: ${cb.since}</div>
+    </div>
+    <div style="margin-top:12px">
+      <div class="health-bar-track">
+        <div class="health-bar-fill ${cb.state==='OPEN'?'danger':cb.state==='HALF-OPEN'?'warning':'good'}"
+             style="width:${cb.health*100}%"></div>
+      </div>
+    </div>
+  </div>`;
+});
+
+// CB Timeline
+const cbTl = document.getElementById('cb-timeline');
+const cbEvents = [
+  { color:'red',    time:'8m ago',  title:'Auth Service CB OPENED', body:'Error rate exceeded 3σ threshold. Circuit opened, 5% health-check traffic maintained.' },
+  { color:'yellow', time:'2m ago',  title:'Payment Service CB → HALF-OPEN', body:'10 consecutive health checks passed. Gradually restoring traffic (50%).' },
+  { color:'green',  time:'18m ago', title:'Inventory Service CB CLOSED', body:'Full traffic restored after 120s gradual recovery. Health score: 0.89.' },
+  { color:'red',    time:'23m ago', title:'Inventory Service CB OPENED', body:'Connection pool at 98%. Circuit opened to prevent cascade.' },
+  { color:'yellow', time:'1h ago',  title:'RDS Aurora CB → HALF-OPEN', body:'Query latency improving. 30% passthrough traffic for health validation.' },
+];
+cbEvents.forEach(e => {
+  cbTl.innerHTML += `<div class="tl-item">
+    <div class="tl-dot ${e.color}"></div>
+    <div class="tl-time">${e.time}</div>
+    <div class="tl-title">${e.title}</div>
+    <div class="tl-body">${e.body}</div>
+  </div>`;
+});
+
+// ── Incident History Timeline ─────────────────────────────────────────────────
+const incTl = document.getElementById('incident-timeline');
+const incidents = [
+  { color:'red',    time:'Today 14:32', title:'[ACTIVE] Auth Service Cascade Risk', body:'Cascade signature detected with 0.91 confidence. Remediation plan pending approval. Blast radius: 3 services.' },
+  { color:'green',  time:'Today 11:15', title:'[PREVENTED] Inventory Cascade Prevented', body:'Circuit breaker activated on connection pool exhaustion. Full recovery in 23 minutes. 0 customer impact.' },
+  { color:'green',  time:'Yesterday 18:44', title:'[PREVENTED] RDS Aurora Failover Prevented', body:'Latency spike detected. Rate limiting applied. Gradual traffic rerouting completed in 28s.' },
+  { color:'yellow', time:'Yesterday 09:20', title:'[PARTIAL] us-west-2 Traffic Isolation', body:'Multi-region traffic shift executed. Some latency increase in eu-west-1. Resolved in 67s.' },
+  { color:'blue',   time:'2 days ago',   title:'[RETRAIN] ML Model Updated', body:'Monthly retraining complete. F1 score: 0.94 → 0.998. Model promoted to production.' },
+  { color:'purple', time:'3 days ago',   title:'[PREVENTED] Payment Service Cascade', body:'Connection pool exhaustion signature detected at 0.87 confidence. Auto-remediation prevented impact.' },
+  { color:'green',  time:'1 week ago',   title:'[PREVENTED] Database Cascade Prevented', body:'RDS read replica failover risk detected. Traffic shifted to standby in 14s. Zero downtime.' },
+];
+incidents.forEach(i => {
+  incTl.innerHTML += `<div class="tl-item">
+    <div class="tl-dot ${i.color}"></div>
+    <div class="tl-time">${i.time}</div>
+    <div class="tl-title">${i.title}</div>
+    <div class="tl-body">${i.body}</div>
+  </div>`;
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function approvePlan(btn) {
+  const card = btn.closest('.plan-card');
+  card.style.opacity = '0.5';
+  card.style.pointerEvents = 'none';
+  btn.textContent = '⏳ Executing…';
+  setTimeout(() => {
+    card.style.opacity = '1';
+    card.innerHTML = '<div style="color:var(--green);font-weight:700;padding:8px 0">✓ Plan executed successfully</div>';
+  }, 1800);
+}
+
+function rejectPlan(btn) {
+  const card = btn.closest('.plan-card');
+  card.style.opacity = '0.4';
+  card.style.pointerEvents = 'none';
+  setTimeout(() => { card.remove(); }, 500);
+}
+
+function saveConfig() {
+  const btn = document.querySelector('[onclick="saveConfig()"]');
+  const orig = btn.textContent;
+  btn.textContent = '✓ Saved!';
+  btn.style.background = 'var(--green)';
+  setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 2000);
+}
+
+function simulateCascade() {
+  const e = { type:'warning', title:'[SIMULATION] Cascade Signature Injected', desc:'Synthetic cascade injected for testing — Order Service latency +200%', time:'just now' };
+  events.unshift(e);
+  if (events.length > 8) events.pop();
+  renderEvents();
+  const hsEl = document.getElementById('health-score');
+  hsEl.textContent = '0.81';
+  hsEl.classList.add('yellow');
+  setTimeout(() => { hsEl.textContent = '0.94'; hsEl.classList.remove('yellow'); }, 4000);
+}
+
+function resetGraph() { drawGraph(); }
+function refreshGraph() {
+  graphNodes.forEach(n => {
+    n.health = Math.min(1, Math.max(0.4, n.health + (Math.random() - 0.5) * 0.08));
+    n.color = n.health > 0.9 ? '#10b981' : n.health > 0.7 ? '#f59e0b' : '#ef4444';
+  });
+  drawGraph();
+}
+
+// ── Live counter animation ─────────────────────────────────────────────────────
+let counter = 0;
+setInterval(() => {
+  counter++;
+  // Pulse health score occasionally
+  if (counter % 15 === 0) {
+    const hs = document.getElementById('health-score');
+    if (hs) {
+      const v = (0.90 + Math.random() * 0.08).toFixed(2);
+      hs.textContent = v;
+    }
+  }
+  // Add live events periodically
+  if (counter % 20 === 0) {
+    const liveEvents = [
+      { type:'info',    title:'Telemetry processed',     desc:'28,400 CloudWatch metrics ingested in 2.1s', time:'just now' },
+      { type:'success', title:'Baseline updated',         desc:'Auth Service baseline recalculated (30d window)', time:'just now' },
+      { type:'info',    title:'Dependency graph updated', desc:'3 new edges discovered via X-Ray traces', time:'just now' },
+    ];
+    const e = liveEvents[Math.floor(Math.random() * liveEvents.length)];
+    e.time = 'just now';
+    events.unshift(e);
+    if (events.length > 6) events.pop();
+    if (document.getElementById('page-dashboard').classList.contains('active')) renderEvents();
+  }
+}, 1000);
+
+// ── Redraw graph on resize ────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  if (document.getElementById('page-dependency-graph').classList.contains('active')) drawGraph();
+});
+</script>
+</body>
+</html>
