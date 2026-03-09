@@ -13,6 +13,7 @@ import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as sfnTasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as path from 'path';
+import { PlaybookMappings } from '../lib/playbook-mappings-construct';
 
 const app = new cdk.App({ analyticsReporting: false });
 const stack = new cdk.Stack(app, 'CascadePreventionStack');
@@ -22,6 +23,11 @@ const webhookEnabled = configuredWebhookUrl ? 'true' : 'false';
 
 const included = new CfnInclude(stack, 'CascadePreventionTemplate', {
 	templateFile: 'cfn-template.yaml',
+});
+
+const playbookMappings = new PlaybookMappings(stack, 'PlaybookMappings', {
+	tableName: 'CascadePrevention-PlaybookMappings',
+	eventBusName: 'CascadePrevention-PlaybookEventBus',
 });
 
 const telemetryBucket = included.getResource('TelemetryBucket710FF2C8') as s3.CfnBucket;

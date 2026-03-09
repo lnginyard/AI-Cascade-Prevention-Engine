@@ -18,7 +18,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/8af669cc873cea696f2b528eb2c30a9f056b4fc9eaeb571a17068251d7ee83a7.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/78bc65ca7e7c9d5947280bb9e5a579058b96ad9acdca41a73890d989f1513519.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -230,6 +230,32 @@
           {
             "type": "aws:cdk:logicalId",
             "data": "SignaturesTableName"
+          }
+        ],
+        "/CascadePreventionStack/PlaybookMappings/PlaybookMappingsTable": [
+          {
+            "type": "aws:cdk:hasPhysicalName",
+            "data": {
+              "Ref": "PlaybookMappingsPlaybookMappingsTable6905E937"
+            }
+          }
+        ],
+        "/CascadePreventionStack/PlaybookMappings/PlaybookMappingsTable/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PlaybookMappingsPlaybookMappingsTable6905E937"
+          }
+        ],
+        "/CascadePreventionStack/PlaybookMappings/CascadeEventBus/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PlaybookMappingsCascadeEventBus9E2ED70D"
+          }
+        ],
+        "/CascadePreventionStack/PlaybookMappings/PlaybookTriggerRule/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PlaybookMappingsPlaybookTriggerRule91CEBB60"
           }
         ],
         "/CascadePreventionStack/RemediationPlansTable": [

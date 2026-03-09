@@ -1149,6 +1149,61 @@
     "aws:cdk:path": "CascadePreventionStack/AnomalyToSignatureRule/AllowEventRuleCascadePreventionStackSignatureMatcherFunction6652C3F8"
    }
   },
+  "PlaybookMappingsPlaybookMappingsTable6905E937": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "mappingId",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "KeySchema": [
+     {
+      "AttributeName": "mappingId",
+      "KeyType": "HASH"
+     }
+    ],
+    "TableName": "CascadePrevention-PlaybookMappings"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/PlaybookMappings/PlaybookMappingsTable/Resource"
+   }
+  },
+  "PlaybookMappingsCascadeEventBus9E2ED70D": {
+   "Type": "AWS::Events::EventBus",
+   "Properties": {
+    "Name": "CascadePrevention-PlaybookEventBus"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/PlaybookMappings/CascadeEventBus/Resource"
+   }
+  },
+  "PlaybookMappingsPlaybookTriggerRule91CEBB60": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "Description": "Matches cascade-related playbook requests and telemetry alerts",
+    "EventBusName": {
+     "Ref": "PlaybookMappingsCascadeEventBus9E2ED70D"
+    },
+    "EventPattern": {
+     "source": [
+      "cascade.prevention"
+     ],
+     "detail-type": [
+      "PlaybookRequest",
+      "TelemetryAlert"
+     ]
+    },
+    "State": "ENABLED"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/PlaybookMappings/PlaybookTriggerRule/Resource"
+   }
+  },
   "RemediationPlansTableC30E9BB6": {
    "Type": "AWS::DynamoDB::Table",
    "Properties": {
