@@ -436,18 +436,6 @@ Resources:
               - sagemaker:DescribeEndpointConfig
             Effect: Allow
             Resource: "*"
-          - Action: lambda:InvokeFunction
-            Effect: Allow
-            Resource:
-              - Fn::GetAtt:
-                  - ModelDeployerFunctionD83F8AD7
-                  - Arn
-              - Fn::Join:
-                  - ""
-                  - - Fn::GetAtt:
-                        - ModelDeployerFunctionD83F8AD7
-                        - Arn
-                    - :*
         Version: "2012-10-17"
       PolicyName: ModelDeployerRoleDefaultPolicy3A2B60DD
       Roles:
@@ -691,12 +679,6 @@ Resources:
           - Arn
     Metadata:
       aws:cdk:path: CascadePreventionStack/AnomalyToSignatureRule/AllowEventRuleCascadePreventionStackSignatureMatcherFunction6652C3F8
-  CDKMetadata:
-    Type: AWS::CDK::Metadata
-    Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/z2OQW7DIBBFz5I9nrqOLxBH7SZSWzndWxgmKbaBygOOLMTdK7Cb1Xv6+vyhgqouoTzwBxVCjsWkeghXx8XI+IO6MGqCcMGVnW/mgmtkcjVcW9lD+Ob9hCnPEhkdITRejOhSuNuGhhNGhgsaRxDeEhtPqfb00yx+1JL3/rX1235iZIprCK3do8QvOymRf7ZZZBPXveSdsRIHgo+Md2+EU9YwOnacCB3BKWEvQzjfzLOTtnDWikhZEyNrkayfRb756d2vdyw/vjp+V+YeWToFA70sVQ2vNZSHgZQqZm+c0gjtxj+9oph9ZQEAAA==
-    Metadata:
-      aws:cdk:path: CascadePreventionStack/CDKMetadata/Default
 Outputs:
   DependencyGraphTableName:
     Description: DynamoDB table for dependency graph
@@ -785,9 +767,4 @@ Outputs:
       Ref: SignaturesTable79733A9C
     Export:
       Name: CascadePrevention-SignaturesTable
-Parameters:
-  BootstrapVersion:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: /cdk-bootstrap/hnb659fds/version
-    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
 

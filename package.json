@@ -38,6 +38,8 @@
     "@aws-sdk/client-s3": "^3.997.0",
     "@aws-sdk/client-sagemaker": "^3.997.0",
     "@aws-sdk/client-sagemaker-runtime": "^3.997.0",
+    "@aws-sdk/client-sfn": "^3.997.0",
+    "@aws-sdk/client-sns": "^3.997.0",
     "@aws-sdk/client-sqs": "^3.400.0",
     "@aws-sdk/client-xray": "^3.400.0",
     "@aws-sdk/lib-dynamodb": "^3.997.0",

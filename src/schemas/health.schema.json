@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HealthTelemetry",
+  "type": "object",
+  "properties": {
+    "source": { "const": "health" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "region": { "type": "string" },
+    "facilityId": { "type": "string" },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "icuOccupancyPct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "inpatientAdmissions": { "type": "integer", "minimum": 0 },
+        "posTestRatePct": { "type": "number", "minimum": 0, "maximum": 100 }
+      },
+      "required": ["icuOccupancyPct"]
+    }
+  },
+  "required": ["source", "timestamp", "region", "metrics"]
+}

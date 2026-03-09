@@ -1,0 +1,128 @@
+openapi: 3.0.3
+info:
+  title: Cascade Prevention Engine API
+  version: 0.1.0
+  description: API skeleton for dependency graph, cascade signatures, and remediation approvals.
+servers:
+  - url: https://example.execute-api.us-east-1.amazonaws.com
+paths:
+  /telemetry/ingest:
+    post:
+      summary: Ingest telemetry event (service-to-service)
+      operationId: ingestTelemetry
+      responses:
+        '200':
+          description: Telemetry accepted
+          content:
+            application/json:
+              schema:
+                type: object
+      security:
+        - awsSigV4: []
+  /dependency-graph:
+    get:
+      summary: Get dependency graph state
+      operationId: getDependencyGraph
+      responses:
+        '200':
+          description: Dependency graph records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+      security:
+        - cognitoJwt: []
+          apiKeyAuth: []
+  /cascade-signatures/active:
+    get:
+      summary: Get active cascade signatures
+      operationId: getActiveSignatures
+      responses:
+        '200':
+          description: Active signatures
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+      security:
+        - cognitoJwt: []
+          apiKeyAuth: []
+  /remediation-plans:
+    get:
+      summary: List remediation plans
+      operationId: getRemediationPlans
+      responses:
+        '200':
+          description: Remediation plans
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+      security:
+        - cognitoJwt: []
+          apiKeyAuth: []
+  /remediation-plans/{planId}/approval:
+    post:
+      summary: Approve or reject a remediation plan
+      operationId: approveRemediationPlan
+      parameters:
+        - in: path
+          name: planId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [approved]
+              properties:
+                approved:
+                  type: boolean
+                reviewer:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Updated remediation plan
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Plan not found
+      security:
+        - cognitoJwt: []
+          apiKeyAuth: []
+components:
+  securitySchemes:
+    awsSigV4:
+      type: apiKey
+      in: header
+      name: Authorization
+    cognitoJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key

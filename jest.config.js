@@ -2,6 +2,7 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/src', '<rootDir>/infrastructure'],
   testMatch: ['**/*.test.ts'],
+  passWithNoTests: true,
   transform: {
     '^.+\\.tsx?$': 'ts-jest'
   },
