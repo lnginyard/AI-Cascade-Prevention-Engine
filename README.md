@@ -60,6 +60,28 @@ cdk bootstrap
 npm run deploy
 ```
 
+### Configure AWS CLI (Your Account)
+
+Use an AWS CLI profile for your own account (recommended: SSO).
+
+```bash
+# SSO mode (recommended)
+npm run aws:configure -- cascade-free-tier us-east-1 sso
+
+# Access-key mode (fallback)
+npm run aws:configure -- cascade-free-tier us-east-1 keys
+```
+
+After setup, use this profile for all commands:
+
+```bash
+export AWS_PROFILE=cascade-free-tier
+export AWS_REGION=us-east-1
+aws sts get-caller-identity
+```
+
+Credentials remain in your local AWS config/credentials files and are not stored in this repository.
+
 ### Configuration
 
 Configure deployment parameters in `cdk.json` context:
@@ -84,6 +106,47 @@ cdk deploy --context multiRegion=true
 ```
 
 Note: Cross-region replication requires manual configuration of destination buckets and replication roles.
+
+### Free-Tier Mode (Recommended Start)
+
+Run in one region first to control cost, then expand only after validating usage.
+
+One-command path:
+
+```bash
+npm run free-tier:start -- cascade-free-tier us-east-1 10 you@example.com
+```
+
+This command validates your AWS profile, bootstraps CDK, sets billing guardrails, and deploys a single-region stack.
+
+Step-by-step path (equivalent):
+
+```bash
+# 1) Bootstrap CDK in your selected region
+npm run free-tier:bootstrap -- cascade-free-tier us-east-1
+
+# 2) Configure budget + billing alarms (confirm SNS email subscription)
+npm run free-tier:guardrails -- cascade-free-tier us-east-1 10 you@example.com
+
+# 3) Deploy single-region MVP with low-cost defaults
+npm run free-tier:deploy -- cascade-free-tier us-east-1
+```
+
+To avoid idle cost when not using the stack:
+
+```bash
+npm run free-tier:destroy -- cascade-free-tier us-east-1
+```
+
+Check environment and stack status:
+
+```bash
+# Identity + stack + API discovery
+npm run free-tier:status -- cascade-free-tier us-east-1
+
+# Include protected-route HTTP checks
+npm run free-tier:status -- cascade-free-tier us-east-1 <api-key> <bearer-token>
+```
 
 ## Core Types
 
@@ -129,6 +192,69 @@ npm test
 ```bash
 npm run synth
 ```
+
+## UI Prototype (Session Kickoff)
+
+An initial, interactive operations dashboard shell is included for UX and stakeholder demo preparation.
+
+- Architecture notes: `UI_INFORMATION_ARCHITECTURE.md`
+- Prototype files: `ui/index.html`, `ui/styles.css`, `ui/app.js`
+- Demo includes an AI-assisted cascade simulator for pre-impact scenario rehearsal and mitigation walkthroughs
+
+To run locally:
+
+```bash
+cd ui
+python3 -m http.server 8080
+```
+
+Then open `http://localhost:8080` in a browser.
+
+### Demo Simulator
+
+Use the **AI Simulator** view to rehearse a cascading event before it reaches customers:
+
+- Select a scenario
+- Choose region or company-wide scope
+- Adjust intensity
+- Click **Simulate Event**
+- Click **Apply AI Mitigation** to show blast-radius reduction and stabilization
+
+### Live API Mode (Optional)
+
+The UI can connect to deployed API routes when you provide:
+
+- API base URL (example: `https://{api-id}.execute-api.{region}.amazonaws.com/v1`)
+- `x-api-key` value
+- Cognito bearer token for protected routes
+
+Current API routes used by the UI:
+
+- `GET /dependency-graph`
+- `GET /cascade-signatures/active`
+- `GET /remediation-plans`
+- `POST /remediation-plans/{planId}/approval`
+
+Note: Browser live mode also requires CORS to be enabled on API Gateway methods.
+This repository now includes CORS configuration; run a fresh deployment to apply it:
+
+```bash
+npm run deploy
+```
+
+## Submission
+
+**Deadline: March 12, 2026**
+
+- Full submission package: `SUBMISSION.md`
+- Blog article (ready to publish): `SUBMISSION_BLOG.md`
+- Social posts (LinkedIn + Twitter/X): `SUBMISSION_SOCIAL.md`
+
+To support the project:
+
+- ⭐ Star the GitHub repo (no AWS account needed)
+- 🗳️ Vote on AWS Community — [submission link]
+- 💬 Share the blog / social post with your SRE and platform engineering network
 
 ## Requirements Mapping
 

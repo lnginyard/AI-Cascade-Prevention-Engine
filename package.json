@@ -9,7 +9,14 @@
     "test": "jest",
     "cdk": "cdk",
     "deploy": "cdk deploy",
-    "synth": "cdk synth"
+    "synth": "cdk synth",
+    "aws:configure": "bash ./scripts/configure-aws-account.sh",
+    "free-tier:bootstrap": "bash ./scripts/free-tier-bootstrap.sh",
+    "free-tier:start": "bash ./scripts/free-tier-start.sh",
+    "free-tier:status": "bash ./scripts/free-tier-status.sh",
+    "free-tier:deploy": "bash ./scripts/free-tier-deploy.sh",
+    "free-tier:guardrails": "bash ./scripts/free-tier-cost-guardrails.sh",
+    "free-tier:destroy": "bash ./scripts/free-tier-destroy.sh"
   },
   "keywords": [
     "aws",

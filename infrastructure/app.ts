@@ -261,6 +261,11 @@ const api = new apigateway.RestApi(stack, 'CascadePreventionApi', {
 	restApiName: 'CascadePreventionApi',
 	description: 'MVP API for cascade prevention telemetry and operator interfaces',
 	deployOptions: { stageName: 'v1' },
+	defaultCorsPreflightOptions: {
+		allowOrigins: apigateway.Cors.ALL_ORIGINS,
+		allowMethods: apigateway.Cors.ALL_METHODS,
+		allowHeaders: ['Content-Type', 'Authorization', 'X-Api-Key'],
+	},
 });
 
 const userPool = new cognito.UserPool(stack, 'CascadePreventionUserPool', {
