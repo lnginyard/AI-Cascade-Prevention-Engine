@@ -1,0 +1,4837 @@
+{
+ "Description": "Cascade Prevention Engine - AI-driven resilience layer for AWS workloads",
+ "Resources": {
+  "EncryptionKey1B843E66": {
+   "Type": "AWS::KMS::Key",
+   "Properties": {
+    "Description": "Encryption key for Cascade Prevention Engine data",
+    "EnableKeyRotation": true,
+    "KeyPolicy": {
+     "Statement": [
+      {
+       "Action": "kms:*",
+       "Effect": "Allow",
+       "Principal": {
+        "AWS": {
+         "Fn::Join": [
+          "",
+          [
+           "arn:aws:iam::",
+           {
+            "Ref": "AWS::AccountId"
+           },
+           ":root"
+          ]
+         ]
+        }
+       },
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/EncryptionKey/Resource"
+   }
+  },
+  "DependencyGraph3324833E": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "nodeId",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "edgeId",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "serviceType",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "lastSeen",
+      "AttributeType": "N"
+     },
+     {
+      "AttributeName": "region",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "GlobalSecondaryIndexes": [
+     {
+      "IndexName": "ServiceTypeIndex",
+      "KeySchema": [
+       {
+        "AttributeName": "serviceType",
+        "KeyType": "HASH"
+       },
+       {
+        "AttributeName": "lastSeen",
+        "KeyType": "RANGE"
+       }
+      ],
+      "Projection": {
+       "ProjectionType": "ALL"
+      }
+     },
+     {
+      "IndexName": "RegionIndex",
+      "KeySchema": [
+       {
+        "AttributeName": "region",
+        "KeyType": "HASH"
+       },
+       {
+        "AttributeName": "nodeId",
+        "KeyType": "RANGE"
+       }
+      ],
+      "Projection": {
+       "ProjectionType": "ALL"
+      }
+     }
+    ],
+    "KeySchema": [
+     {
+      "AttributeName": "nodeId",
+      "KeyType": "HASH"
+     },
+     {
+      "AttributeName": "edgeId",
+      "KeyType": "RANGE"
+     }
+    ],
+    "PointInTimeRecoverySpecification": {
+     "PointInTimeRecoveryEnabled": true
+    },
+    "SSESpecification": {
+     "KMSMasterKeyId": {
+      "Fn::GetAtt": [
+       "EncryptionKey1B843E66",
+       "Arn"
+      ]
+     },
+     "SSEEnabled": true,
+     "SSEType": "KMS"
+    },
+    "StreamSpecification": {
+     "StreamViewType": "NEW_AND_OLD_IMAGES"
+    },
+    "TableName": "CascadePrevention-DependencyGraph",
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/DependencyGraph/Resource"
+   }
+  },
+  "TelemetryCacheD29A0395": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "serviceId",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "timestamp",
+      "AttributeType": "N"
+     },
+     {
+      "AttributeName": "eventType",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "GlobalSecondaryIndexes": [
+     {
+      "IndexName": "EventTypeIndex",
+      "KeySchema": [
+       {
+        "AttributeName": "eventType",
+        "KeyType": "HASH"
+       },
+       {
+        "AttributeName": "timestamp",
+        "KeyType": "RANGE"
+       }
+      ],
+      "Projection": {
+       "ProjectionType": "ALL"
+      }
+     }
+    ],
+    "KeySchema": [
+     {
+      "AttributeName": "serviceId",
+      "KeyType": "HASH"
+     },
+     {
+      "AttributeName": "timestamp",
+      "KeyType": "RANGE"
+     }
+    ],
+    "SSESpecification": {
+     "KMSMasterKeyId": {
+      "Fn::GetAtt": [
+       "EncryptionKey1B843E66",
+       "Arn"
+      ]
+     },
+     "SSEEnabled": true,
+     "SSEType": "KMS"
+    },
+    "TableName": "CascadePrevention-TelemetryCache",
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ],
+    "TimeToLiveSpecification": {
+     "AttributeName": "ttl",
+     "Enabled": true
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/TelemetryCache/Resource"
+   }
+  },
+  "CircuitBreakerStateB39870D9": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "serviceId",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "state",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "openedAt",
+      "AttributeType": "N"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "GlobalSecondaryIndexes": [
+     {
+      "IndexName": "StateIndex",
+      "KeySchema": [
+       {
+        "AttributeName": "state",
+        "KeyType": "HASH"
+       },
+       {
+        "AttributeName": "openedAt",
+        "KeyType": "RANGE"
+       }
+      ],
+      "Projection": {
+       "ProjectionType": "ALL"
+      }
+     }
+    ],
+    "KeySchema": [
+     {
+      "AttributeName": "serviceId",
+      "KeyType": "HASH"
+     }
+    ],
+    "PointInTimeRecoverySpecification": {
+     "PointInTimeRecoveryEnabled": true
+    },
+    "SSESpecification": {
+     "KMSMasterKeyId": {
+      "Fn::GetAtt": [
+       "EncryptionKey1B843E66",
+       "Arn"
+      ]
+     },
+     "SSEEnabled": true,
+     "SSEType": "KMS"
+    },
+    "TableName": "CascadePrevention-CircuitBreakerState",
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CircuitBreakerState/Resource"
+   }
+  },
+  "ModelRegistryB238A970": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "pk",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "modelId",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "modelName",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "version",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "GlobalSecondaryIndexes": [
+     {
+      "IndexName": "ModelNameIndex",
+      "KeySchema": [
+       {
+        "AttributeName": "modelName",
+        "KeyType": "HASH"
+       },
+       {
+        "AttributeName": "version",
+        "KeyType": "RANGE"
+       }
+      ],
+      "Projection": {
+       "ProjectionType": "ALL"
+      }
+     }
+    ],
+    "KeySchema": [
+     {
+      "AttributeName": "pk",
+      "KeyType": "HASH"
+     },
+     {
+      "AttributeName": "modelId",
+      "KeyType": "RANGE"
+     }
+    ],
+    "PointInTimeRecoverySpecification": {
+     "PointInTimeRecoveryEnabled": true
+    },
+    "SSESpecification": {
+     "KMSMasterKeyId": {
+      "Fn::GetAtt": [
+       "EncryptionKey1B843E66",
+       "Arn"
+      ]
+     },
+     "SSEEnabled": true,
+     "SSEType": "KMS"
+    },
+    "TableName": "CascadePrevention-ModelRegistry",
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ModelRegistry/Resource"
+   }
+  },
+  "TelemetryBucket710FF2C8": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "KMSMasterKeyID": {
+         "Fn::GetAtt": [
+          "EncryptionKey1B843E66",
+          "Arn"
+         ]
+        },
+        "SSEAlgorithm": "aws:kms"
+       }
+      }
+     ]
+    },
+    "BucketName": {
+     "Fn::Join": [
+      "",
+      [
+       "cascade-prevention-telemetry-",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       "-",
+       {
+        "Ref": "AWS::Region"
+       }
+      ]
+     ]
+    },
+    "LifecycleConfiguration": {
+     "Rules": [
+      {
+       "ExpirationInDays": 365,
+       "Id": "TransitionToIntelligentTiering",
+       "Status": "Enabled",
+       "Transitions": [
+        {
+         "StorageClass": "INTELLIGENT_TIERING",
+         "TransitionInDays": 30
+        }
+       ]
+      }
+     ]
+    },
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/TelemetryBucket/Resource"
+   }
+  },
+  "SnapshotBucketB2BF31D3": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "KMSMasterKeyID": {
+         "Fn::GetAtt": [
+          "EncryptionKey1B843E66",
+          "Arn"
+         ]
+        },
+        "SSEAlgorithm": "aws:kms"
+       }
+      }
+     ]
+    },
+    "BucketName": {
+     "Fn::Join": [
+      "",
+      [
+       "cascade-prevention-snapshots-",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       "-",
+       {
+        "Ref": "AWS::Region"
+       }
+      ]
+     ]
+    },
+    "LifecycleConfiguration": {
+     "Rules": [
+      {
+       "ExpirationInDays": 90,
+       "Id": "ExpireOldSnapshots",
+       "NoncurrentVersionExpiration": {
+        "NoncurrentDays": 7
+       },
+       "Status": "Enabled"
+      }
+     ]
+    },
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ],
+    "VersioningConfiguration": {
+     "Status": "Enabled"
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/SnapshotBucket/Resource"
+   }
+  },
+  "EventBus7B8748AA": {
+   "Type": "AWS::Events::EventBus",
+   "Properties": {
+    "Name": "CascadePrevention",
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/EventBus/Resource"
+   }
+  },
+  "EventArchive336EADAF": {
+   "Type": "AWS::Events::Archive",
+   "Properties": {
+    "ArchiveName": "CascadePrevention-Archive",
+    "EventPattern": {
+     "source": [
+      "cascade-prevention"
+     ]
+    },
+    "KmsKeyIdentifier": "",
+    "RetentionDays": 90,
+    "SourceArn": {
+     "Fn::GetAtt": [
+      "EventBus7B8748AA",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/EventArchive/Archive"
+   }
+  },
+  "ModelDeployerRoleCAA817DE": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Description": "Role for Lambda that deploys SageMaker models and endpoints",
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ModelDeployerRole/Resource"
+   }
+  },
+  "ModelDeployerRoleDefaultPolicy3A2B60DD": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:ConditionCheckItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:DescribeTable",
+        "dynamodb:GetItem",
+        "dynamodb:GetRecords",
+        "dynamodb:GetShardIterator",
+        "dynamodb:PutItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:UpdateItem"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ModelRegistryB238A970",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ModelRegistryB238A970",
+             "Arn"
+            ]
+           },
+           "/index/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "kms:Decrypt",
+        "kms:DescribeKey",
+        "kms:Encrypt",
+        "kms:GenerateDataKey*",
+        "kms:ReEncrypt*"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "EncryptionKey1B843E66",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": [
+        "s3:GetBucket*",
+        "s3:GetObject*",
+        "s3:List*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "TelemetryBucket710FF2C8",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "TelemetryBucket710FF2C8",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "s3:Abort*",
+        "s3:DeleteObject*",
+        "s3:GetBucket*",
+        "s3:GetObject*",
+        "s3:List*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "SnapshotBucketB2BF31D3",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "SnapshotBucketB2BF31D3",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "sagemaker:CreateEndpoint",
+        "sagemaker:CreateEndpointConfig",
+        "sagemaker:CreateModel",
+        "sagemaker:DeleteEndpointConfig",
+        "sagemaker:DeleteModel",
+        "sagemaker:DescribeEndpoint",
+        "sagemaker:DescribeEndpointConfig"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "ModelDeployerRoleDefaultPolicy3A2B60DD",
+    "Roles": [
+     {
+      "Ref": "ModelDeployerRoleCAA817DE"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ModelDeployerRole/DefaultPolicy/Resource"
+   }
+  },
+  "ModelDeployerFunctionD83F8AD7": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "ZipFile": "exports.handler = async function(event) {\n  return {\n    statusCode: 200,\n    body: JSON.stringify({\n      message: 'Model deployer placeholder executed',\n      received: event || null\n    })\n  };\n};\n"
+    },
+    "Environment": {
+     "Variables": {
+      "MODEL_REGISTRY_TABLE": {
+       "Ref": "ModelRegistryB238A970"
+      },
+      "MODEL_DEPLOYER_ROLE_ARN": {
+       "Fn::GetAtt": [
+        "ModelDeployerRoleCAA817DE",
+        "Arn"
+       ]
+      },
+      "SNAPSHOT_BUCKET": {
+       "Ref": "SnapshotBucketB2BF31D3"
+      },
+      "TELEMETRY_BUCKET": {
+       "Ref": "TelemetryBucket710FF2C8"
+      }
+     }
+    },
+    "Handler": "index.handler",
+    "MemorySize": 512,
+    "Role": {
+     "Fn::GetAtt": [
+      "ModelDeployerRoleCAA817DE",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ],
+    "Timeout": 60
+   },
+   "DependsOn": [
+    "ModelDeployerRoleCAA817DE",
+    "ModelDeployerRoleDefaultPolicy3A2B60DD"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ModelDeployerFunction/Resource",
+    "aws:asset:path": "asset.dd0fd4b30a18fa19ccea423a3de3e247d225591d746e9922bde143330dc711be",
+    "aws:asset:is-bundled": true,
+    "aws:asset:property": "Code"
+   }
+  },
+  "SignatureMatcherRoleDAC7EF4F": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Description": "Role for Lambdas that call Bedrock models (signature matcher)",
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/SignatureMatcherRole/Resource"
+   }
+  },
+  "SignaturesTable79733A9C": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "signatureId",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "originServiceId",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "detectedAt",
+      "AttributeType": "N"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "GlobalSecondaryIndexes": [
+     {
+      "IndexName": "OriginIndex",
+      "KeySchema": [
+       {
+        "AttributeName": "originServiceId",
+        "KeyType": "HASH"
+       },
+       {
+        "AttributeName": "detectedAt",
+        "KeyType": "RANGE"
+       }
+      ],
+      "Projection": {
+       "ProjectionType": "ALL"
+      }
+     }
+    ],
+    "KeySchema": [
+     {
+      "AttributeName": "signatureId",
+      "KeyType": "HASH"
+     }
+    ],
+    "PointInTimeRecoverySpecification": {
+     "PointInTimeRecoveryEnabled": true
+    },
+    "SSESpecification": {
+     "KMSMasterKeyId": {
+      "Fn::GetAtt": [
+       "EncryptionKey1B843E66",
+       "Arn"
+      ]
+     },
+     "SSEEnabled": true,
+     "SSEType": "KMS"
+    },
+    "TableName": "CascadePrevention-Signatures",
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/SignaturesTable/Resource"
+   }
+  },
+  "SignatureMatcherRoleDefaultPolicyEE512ACD": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      },
+      {
+       "Action": [
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:ConditionCheckItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:DescribeTable",
+        "dynamodb:GetItem",
+        "dynamodb:GetRecords",
+        "dynamodb:GetShardIterator",
+        "dynamodb:PutItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:UpdateItem"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "SignaturesTable79733A9C",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "SignaturesTable79733A9C",
+             "Arn"
+            ]
+           },
+           "/index/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "kms:Decrypt",
+        "kms:DescribeKey",
+        "kms:Encrypt",
+        "kms:GenerateDataKey*",
+        "kms:ReEncrypt*"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "EncryptionKey1B843E66",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "SignatureMatcherRoleDefaultPolicyEE512ACD",
+    "Roles": [
+     {
+      "Ref": "SignatureMatcherRoleDAC7EF4F"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/SignatureMatcherRole/DefaultPolicy/Resource"
+   }
+  },
+  "SignatureMatcherFunction7CAC81A7": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "ZipFile": "exports.handler = async function(event) {\n  return {\n    statusCode: 200,\n    body: JSON.stringify({\n      message: 'Signature matcher placeholder executed',\n      received: event || null\n    })\n  };\n};\n"
+    },
+    "Environment": {
+     "Variables": {
+      "MODEL_REGISTRY_TABLE": {
+       "Ref": "ModelRegistryB238A970"
+      },
+      "SIGNATURE_MATCHER_ROLE_ARN": {
+       "Fn::GetAtt": [
+        "SignatureMatcherRoleDAC7EF4F",
+        "Arn"
+       ]
+      },
+      "SIGNATURES_TABLE_NAME": {
+       "Ref": "SignaturesTable79733A9C"
+      },
+      "EVENT_BUS_NAME": {
+       "Ref": "EventBus7B8748AA"
+      }
+     }
+    },
+    "Handler": "index.handler",
+    "MemorySize": 256,
+    "Role": {
+     "Fn::GetAtt": [
+      "SignatureMatcherRoleDAC7EF4F",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ],
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "SignatureMatcherRoleDAC7EF4F",
+    "SignatureMatcherRoleDefaultPolicyEE512ACD"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/SignatureMatcherFunction/Resource",
+    "aws:asset:path": "asset.078bb210b1613ad2d5b02ee6e59fe4ab283360f37eb9b258c5388b7d66a23395",
+    "aws:asset:is-bundled": true,
+    "aws:asset:property": "Code"
+   }
+  },
+  "AnomalyToSignatureRule67678462": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "EventBusName": {
+     "Ref": "EventBus7B8748AA"
+    },
+    "EventPattern": {
+     "source": [
+      "cascade-prevention.anomaly"
+     ],
+     "detail-type": [
+      "AnomalyDetected"
+     ]
+    },
+    "Name": "AnomalyToSignature",
+    "State": "ENABLED",
+    "Tags": [
+     {
+      "Key": "ManagedBy",
+      "Value": "CDK"
+     },
+     {
+      "Key": "Project",
+      "Value": "CascadePreventionEngine"
+     }
+    ],
+    "Targets": [
+     {
+      "Arn": {
+       "Fn::GetAtt": [
+        "SignatureMatcherFunction7CAC81A7",
+        "Arn"
+       ]
+      },
+      "Id": "Target0"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/AnomalyToSignatureRule/Resource"
+   }
+  },
+  "AnomalyToSignatureRuleAllowEventRuleCascadePreventionStackSignatureMatcherFunction6652C3F8E644C74F": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "SignatureMatcherFunction7CAC81A7",
+      "Arn"
+     ]
+    },
+    "Principal": "events.amazonaws.com",
+    "SourceArn": {
+     "Fn::GetAtt": [
+      "AnomalyToSignatureRule67678462",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/AnomalyToSignatureRule/AllowEventRuleCascadePreventionStackSignatureMatcherFunction6652C3F8"
+   }
+  },
+  "OperationsConsoleBucketD13072BC": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "aws-cdk:cr-owned:c19e2409",
+      "Value": "true"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleBucket/Resource"
+   }
+  },
+  "OperationsConsoleBucketPolicyDAB29021": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "OperationsConsoleBucketD13072BC"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "s3:*",
+       "Condition": {
+        "Bool": {
+         "aws:SecureTransport": "false"
+        }
+       },
+       "Effect": "Deny",
+       "Principal": {
+        "AWS": "*"
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "OperationsConsoleBucketD13072BC",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "OperationsConsoleBucketD13072BC",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "s3:GetObject",
+       "Condition": {
+        "StringEquals": {
+         "AWS:SourceArn": {
+          "Fn::Join": [
+           "",
+           [
+            "arn:",
+            {
+             "Ref": "AWS::Partition"
+            },
+            ":cloudfront::",
+            {
+             "Ref": "AWS::AccountId"
+            },
+            ":distribution/",
+            {
+             "Ref": "OperationsConsoleDistribution9384F8A9"
+            }
+           ]
+          ]
+         }
+        }
+       },
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "cloudfront.amazonaws.com"
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "OperationsConsoleBucketD13072BC",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleBucket/Policy/Resource"
+   }
+  },
+  "OperationsConsoleCertificateCertificateRequestorFunctionServiceRole8C3DAE93": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorFunction/ServiceRole/Resource"
+   }
+  },
+  "OperationsConsoleCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy21A21578": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "acm:AddTagsToCertificate",
+        "acm:DeleteCertificate",
+        "acm:DescribeCertificate",
+        "acm:RequestCertificate",
+        "route53:GetChange"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      },
+      {
+       "Action": "route53:changeResourceRecordSets",
+       "Condition": {
+        "ForAllValues:StringEquals": {
+         "route53:ChangeResourceRecordSetsRecordTypes": [
+          "CNAME"
+         ],
+         "route53:ChangeResourceRecordSetsActions": [
+          "UPSERT"
+         ]
+        },
+        "ForAllValues:StringLike": {
+         "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+          "*.aicpe.dev"
+         ]
+        }
+       },
+       "Effect": "Allow",
+       "Resource": "arn:aws:route53:::hostedzone/Z09581692MGKXVAUBBRRM"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "OperationsConsoleCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy21A21578",
+    "Roles": [
+     {
+      "Ref": "OperationsConsoleCertificateCertificateRequestorFunctionServiceRole8C3DAE93"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorFunction/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "OperationsConsoleCertificateCertificateRequestorFunction6D6C1F3F": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "b073cebcf4d61fb152a30f5a5e57a94df7f980a549fdf1a79a0b18c5750522d8.zip"
+    },
+    "Handler": "index.certificateRequestHandler",
+    "Role": {
+     "Fn::GetAtt": [
+      "OperationsConsoleCertificateCertificateRequestorFunctionServiceRole8C3DAE93",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "OperationsConsoleCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy21A21578",
+    "OperationsConsoleCertificateCertificateRequestorFunctionServiceRole8C3DAE93"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorFunction/Resource",
+    "aws:asset:path": "asset.b073cebcf4d61fb152a30f5a5e57a94df7f980a549fdf1a79a0b18c5750522d8",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "OperationsConsoleCertificateCertificateRequestorResource42BB465B": {
+   "Type": "AWS::CloudFormation::CustomResource",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "OperationsConsoleCertificateCertificateRequestorFunction6D6C1F3F",
+      "Arn"
+     ]
+    },
+    "DomainName": "aicpe.dev",
+    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
+    "Region": "us-east-1"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorResource/Default"
+   }
+  },
+  "OperationsConsoleDistributionOrigin1S3OriginAccessControl2F757E63": {
+   "Type": "AWS::CloudFront::OriginAccessControl",
+   "Properties": {
+    "OriginAccessControlConfig": {
+     "Name": "CascadePreventionStackOperatOrigin1S3OriginAccessControl4C2177FA",
+     "OriginAccessControlOriginType": "s3",
+     "SigningBehavior": "always",
+     "SigningProtocol": "sigv4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleDistribution/Origin1/S3OriginAccessControl/Resource"
+   }
+  },
+  "OperationsConsoleDistribution9384F8A9": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "Aliases": [
+      "aicpe.dev"
+     ],
+     "Comment": "Cascade Prevention Engine operations console",
+     "CustomErrorResponses": [
+      {
+       "ErrorCachingMinTTL": 300,
+       "ErrorCode": 403,
+       "ResponseCode": 200,
+       "ResponsePagePath": "/index.html"
+      },
+      {
+       "ErrorCachingMinTTL": 300,
+       "ErrorCode": 404,
+       "ResponseCode": 200,
+       "ResponsePagePath": "/index.html"
+      }
+     ],
+     "DefaultCacheBehavior": {
+      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+      "Compress": true,
+      "TargetOriginId": "CascadePreventionStackOperationsConsoleDistributionOrigin1BA5C3A76",
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "DefaultRootObject": "index.html",
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "DomainName": {
+        "Fn::GetAtt": [
+         "OperationsConsoleBucketD13072BC",
+         "RegionalDomainName"
+        ]
+       },
+       "Id": "CascadePreventionStackOperationsConsoleDistributionOrigin1BA5C3A76",
+       "OriginAccessControlId": {
+        "Fn::GetAtt": [
+         "OperationsConsoleDistributionOrigin1S3OriginAccessControl2F757E63",
+         "Id"
+        ]
+       },
+       "S3OriginConfig": {
+        "OriginAccessIdentity": ""
+       }
+      }
+     ],
+     "ViewerCertificate": {
+      "AcmCertificateArn": {
+       "Fn::GetAtt": [
+        "OperationsConsoleCertificateCertificateRequestorResource42BB465B",
+        "Arn"
+       ]
+      },
+      "MinimumProtocolVersion": "TLSv1.2_2021",
+      "SslSupportMethod": "sni-only"
+     }
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleDistribution/Resource"
+   }
+  },
+  "OperationsConsoleDeploymentAwsCliLayer5FA0FA8F": {
+   "Type": "AWS::Lambda::LayerVersion",
+   "Properties": {
+    "Content": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "0cfdecad2260a3a84ad0c2d08a77e03c9d25e26c7b52f26b1e1faf97aef92f18.zip"
+    },
+    "Description": "/opt/awscli/aws"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleDeployment/AwsCliLayer/Resource",
+    "aws:asset:path": "asset.0cfdecad2260a3a84ad0c2d08a77e03c9d25e26c7b52f26b1e1faf97aef92f18.zip",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Content"
+   }
+  },
+  "OperationsConsoleDeploymentCustomResource7314077F": {
+   "Type": "Custom::CDKBucketDeployment",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536",
+      "Arn"
+     ]
+    },
+    "SourceBucketNames": [
+     "cdk-hnb659fds-assets-593688888943-us-east-1"
+    ],
+    "SourceObjectKeys": [
+     "f90a40bd50f3c263cd4c8b7896ebca9db12dfff47d8b270267270a57ebd633c5.zip"
+    ],
+    "DestinationBucketName": {
+     "Ref": "OperationsConsoleBucketD13072BC"
+    },
+    "WaitForDistributionInvalidation": true,
+    "Prune": true,
+    "DistributionId": {
+     "Ref": "OperationsConsoleDistribution9384F8A9"
+    },
+    "DistributionPaths": [
+     "/*"
+    ],
+    "OutputObjectKeys": true
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleDeployment/CustomResource/Default"
+   }
+  },
+  "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/Resource"
+   }
+  },
+  "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:GetBucket*",
+        "s3:GetObject*",
+        "s3:List*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        "arn:aws:s3:::cdk-hnb659fds-assets-593688888943-us-east-1",
+        "arn:aws:s3:::cdk-hnb659fds-assets-593688888943-us-east-1/*"
+       ]
+      },
+      {
+       "Action": [
+        "s3:Abort*",
+        "s3:DeleteObject*",
+        "s3:GetBucket*",
+        "s3:GetObject*",
+        "s3:List*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ArticleSiteBucketF1B2E614",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::GetAtt": [
+          "OperationsConsoleBucketD13072BC",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ArticleSiteBucketF1B2E614",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "OperationsConsoleBucketD13072BC",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "cloudfront:CreateInvalidation",
+        "cloudfront:GetInvalidation"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF",
+    "Roles": [
+     {
+      "Ref": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "3423a042b818e31c1e34a19d6689ab2e5f9b70fcbe9e71df66f241b20a200bd9.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "AWS_CA_BUNDLE": "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
+     }
+    },
+    "Handler": "index.handler",
+    "Layers": [
+     {
+      "Ref": "OperationsConsoleDeploymentAwsCliLayer5FA0FA8F"
+     }
+    ],
+    "Role": {
+     "Fn::GetAtt": [
+      "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.13",
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF",
+    "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/Resource",
+    "aws:asset:path": "asset.3423a042b818e31c1e34a19d6689ab2e5f9b70fcbe9e71df66f241b20a200bd9",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "OperationsConsoleAliasRecordA4E0EB7E": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::GetAtt": [
+       "OperationsConsoleDistribution9384F8A9",
+       "DomainName"
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::FindInMap": [
+       "AWSCloudFrontPartitionHostedZoneIdMap",
+       {
+        "Ref": "AWS::Partition"
+       },
+       "zoneId"
+      ]
+     }
+    },
+    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
+    "Name": "aicpe.dev.",
+    "Type": "A"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleAliasRecord/Resource"
+   }
+  },
+  "OperationsConsoleAliasRecordIpv6DFDDB8A7": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::GetAtt": [
+       "OperationsConsoleDistribution9384F8A9",
+       "DomainName"
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::FindInMap": [
+       "AWSCloudFrontPartitionHostedZoneIdMap",
+       {
+        "Ref": "AWS::Partition"
+       },
+       "zoneId"
+      ]
+     }
+    },
+    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
+    "Name": "aicpe.dev.",
+    "Type": "AAAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleAliasRecordIpv6/Resource"
+   }
+  },
+  "ArticleSiteBucketF1B2E614": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "aws-cdk:cr-owned:25b284c9",
+      "Value": "true"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteBucket/Resource"
+   }
+  },
+  "ArticleSiteBucketPolicy9036E1D1": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "ArticleSiteBucketF1B2E614"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "s3:*",
+       "Condition": {
+        "Bool": {
+         "aws:SecureTransport": "false"
+        }
+       },
+       "Effect": "Deny",
+       "Principal": {
+        "AWS": "*"
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ArticleSiteBucketF1B2E614",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ArticleSiteBucketF1B2E614",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "s3:GetObject",
+       "Condition": {
+        "StringEquals": {
+         "AWS:SourceArn": {
+          "Fn::Join": [
+           "",
+           [
+            "arn:",
+            {
+             "Ref": "AWS::Partition"
+            },
+            ":cloudfront::",
+            {
+             "Ref": "AWS::AccountId"
+            },
+            ":distribution/",
+            {
+             "Ref": "ArticleSiteDistributionBC7D0080"
+            }
+           ]
+          ]
+         }
+        }
+       },
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "cloudfront.amazonaws.com"
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "ArticleSiteBucketF1B2E614",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteBucket/Policy/Resource"
+   }
+  },
+  "ArticleSiteCertificateCertificateRequestorFunctionServiceRole8434EFF1": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorFunction/ServiceRole/Resource"
+   }
+  },
+  "ArticleSiteCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy77BD8365": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "acm:AddTagsToCertificate",
+        "acm:DeleteCertificate",
+        "acm:DescribeCertificate",
+        "acm:RequestCertificate",
+        "route53:GetChange"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      },
+      {
+       "Action": "route53:changeResourceRecordSets",
+       "Condition": {
+        "ForAllValues:StringEquals": {
+         "route53:ChangeResourceRecordSetsRecordTypes": [
+          "CNAME"
+         ],
+         "route53:ChangeResourceRecordSetsActions": [
+          "UPSERT"
+         ]
+        },
+        "ForAllValues:StringLike": {
+         "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+          "*.article.aicpe.dev"
+         ]
+        }
+       },
+       "Effect": "Allow",
+       "Resource": "arn:aws:route53:::hostedzone/Z09581692MGKXVAUBBRRM"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "ArticleSiteCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy77BD8365",
+    "Roles": [
+     {
+      "Ref": "ArticleSiteCertificateCertificateRequestorFunctionServiceRole8434EFF1"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorFunction/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "ArticleSiteCertificateCertificateRequestorFunction1B9EFF6D": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "b073cebcf4d61fb152a30f5a5e57a94df7f980a549fdf1a79a0b18c5750522d8.zip"
+    },
+    "Handler": "index.certificateRequestHandler",
+    "Role": {
+     "Fn::GetAtt": [
+      "ArticleSiteCertificateCertificateRequestorFunctionServiceRole8434EFF1",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "ArticleSiteCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy77BD8365",
+    "ArticleSiteCertificateCertificateRequestorFunctionServiceRole8434EFF1"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorFunction/Resource",
+    "aws:asset:path": "asset.b073cebcf4d61fb152a30f5a5e57a94df7f980a549fdf1a79a0b18c5750522d8",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "ArticleSiteCertificateCertificateRequestorResource29689D96": {
+   "Type": "AWS::CloudFormation::CustomResource",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "ArticleSiteCertificateCertificateRequestorFunction1B9EFF6D",
+      "Arn"
+     ]
+    },
+    "DomainName": "article.aicpe.dev",
+    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
+    "Region": "us-east-1"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorResource/Default"
+   }
+  },
+  "ArticleSiteDistributionOrigin1S3OriginAccessControl60C6DCD9": {
+   "Type": "AWS::CloudFront::OriginAccessControl",
+   "Properties": {
+    "OriginAccessControlConfig": {
+     "Name": "CascadePreventionStackArticlOrigin1S3OriginAccessControl3CB7A36B",
+     "OriginAccessControlOriginType": "s3",
+     "SigningBehavior": "always",
+     "SigningProtocol": "sigv4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteDistribution/Origin1/S3OriginAccessControl/Resource"
+   }
+  },
+  "ArticleSiteDistributionBC7D0080": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "Aliases": [
+      "article.aicpe.dev"
+     ],
+     "Comment": "Cascade Prevention Engine article site",
+     "DefaultCacheBehavior": {
+      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+      "Compress": true,
+      "TargetOriginId": "CascadePreventionStackArticleSiteDistributionOrigin12301A0BB",
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "DefaultRootObject": "index.html",
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "DomainName": {
+        "Fn::GetAtt": [
+         "ArticleSiteBucketF1B2E614",
+         "RegionalDomainName"
+        ]
+       },
+       "Id": "CascadePreventionStackArticleSiteDistributionOrigin12301A0BB",
+       "OriginAccessControlId": {
+        "Fn::GetAtt": [
+         "ArticleSiteDistributionOrigin1S3OriginAccessControl60C6DCD9",
+         "Id"
+        ]
+       },
+       "S3OriginConfig": {
+        "OriginAccessIdentity": ""
+       }
+      }
+     ],
+     "ViewerCertificate": {
+      "AcmCertificateArn": {
+       "Fn::GetAtt": [
+        "ArticleSiteCertificateCertificateRequestorResource29689D96",
+        "Arn"
+       ]
+      },
+      "MinimumProtocolVersion": "TLSv1.2_2021",
+      "SslSupportMethod": "sni-only"
+     }
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteDistribution/Resource"
+   }
+  },
+  "ArticleSiteDeploymentAwsCliLayer83719E88": {
+   "Type": "AWS::Lambda::LayerVersion",
+   "Properties": {
+    "Content": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "0cfdecad2260a3a84ad0c2d08a77e03c9d25e26c7b52f26b1e1faf97aef92f18.zip"
+    },
+    "Description": "/opt/awscli/aws"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteDeployment/AwsCliLayer/Resource",
+    "aws:asset:path": "asset.0cfdecad2260a3a84ad0c2d08a77e03c9d25e26c7b52f26b1e1faf97aef92f18.zip",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Content"
+   }
+  },
+  "ArticleSiteDeploymentCustomResourceC0FCD903": {
+   "Type": "Custom::CDKBucketDeployment",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536",
+      "Arn"
+     ]
+    },
+    "SourceBucketNames": [
+     "cdk-hnb659fds-assets-593688888943-us-east-1"
+    ],
+    "SourceObjectKeys": [
+     "22166cadb615fe4450a742d5296c4384c9a3ca7230604bc374c49304ddb3b4ec.zip"
+    ],
+    "DestinationBucketName": {
+     "Ref": "ArticleSiteBucketF1B2E614"
+    },
+    "WaitForDistributionInvalidation": true,
+    "Prune": true,
+    "DistributionId": {
+     "Ref": "ArticleSiteDistributionBC7D0080"
+    },
+    "DistributionPaths": [
+     "/*"
+    ],
+    "OutputObjectKeys": true
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteDeployment/CustomResource/Default"
+   }
+  },
+  "ArticleSiteAliasRecordF1C652A8": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::GetAtt": [
+       "ArticleSiteDistributionBC7D0080",
+       "DomainName"
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::FindInMap": [
+       "AWSCloudFrontPartitionHostedZoneIdMap",
+       {
+        "Ref": "AWS::Partition"
+       },
+       "zoneId"
+      ]
+     }
+    },
+    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
+    "Name": "article.aicpe.dev.",
+    "Type": "A"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteAliasRecord/Resource"
+   }
+  },
+  "ArticleSiteAliasRecordIpv61CD0C741": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::GetAtt": [
+       "ArticleSiteDistributionBC7D0080",
+       "DomainName"
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::FindInMap": [
+       "AWSCloudFrontPartitionHostedZoneIdMap",
+       {
+        "Ref": "AWS::Partition"
+       },
+       "zoneId"
+      ]
+     }
+    },
+    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
+    "Name": "article.aicpe.dev.",
+    "Type": "AAAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteAliasRecordIpv6/Resource"
+   }
+  },
+  "PlaybookMappingsPlaybookMappingsTable6905E937": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "mappingId",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "KeySchema": [
+     {
+      "AttributeName": "mappingId",
+      "KeyType": "HASH"
+     }
+    ],
+    "TableName": "CascadePrevention-PlaybookMappings"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/PlaybookMappings/PlaybookMappingsTable/Resource"
+   }
+  },
+  "PlaybookMappingsCascadeEventBus9E2ED70D": {
+   "Type": "AWS::Events::EventBus",
+   "Properties": {
+    "Name": "CascadePrevention-PlaybookEventBus"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/PlaybookMappings/CascadeEventBus/Resource"
+   }
+  },
+  "PlaybookMappingsPlaybookTriggerRule91CEBB60": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "Description": "Matches cascade-related playbook requests and telemetry alerts",
+    "EventBusName": {
+     "Ref": "PlaybookMappingsCascadeEventBus9E2ED70D"
+    },
+    "EventPattern": {
+     "source": [
+      "cascade.prevention"
+     ],
+     "detail-type": [
+      "PlaybookRequest",
+      "TelemetryAlert"
+     ]
+    },
+    "State": "ENABLED"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/PlaybookMappings/PlaybookTriggerRule/Resource"
+   }
+  },
+  "RemediationPlansTableC30E9BB6": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "planId",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "KeySchema": [
+     {
+      "AttributeName": "planId",
+      "KeyType": "HASH"
+     }
+    ],
+    "PointInTimeRecoverySpecification": {
+     "PointInTimeRecoveryEnabled": true
+    },
+    "SSESpecification": {
+     "SSEEnabled": true
+    },
+    "TableName": "CascadePrevention-RemediationPlans"
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/RemediationPlansTable/Resource"
+   }
+  },
+  "CascadeAlertsTopicE8D9159D": {
+   "Type": "AWS::SNS::Topic",
+   "Properties": {
+    "DisplayName": "Cascade Prevention Alerts"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadeAlertsTopic/Resource"
+   }
+  },
+  "TelemetryIngestFunctionServiceRole94C01EF4": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/TelemetryIngestFunction/ServiceRole/Resource"
+   }
+  },
+  "TelemetryIngestFunctionServiceRoleDefaultPolicy4F53FC83": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "s3:PutObject",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "TelemetryBucket710FF2C8",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      },
+      {
+       "Action": "events:PutEvents",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "EventBus7B8748AA",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": "dynamodb:PutItem",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "TelemetryCacheD29A0395",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "TelemetryIngestFunctionServiceRoleDefaultPolicy4F53FC83",
+    "Roles": [
+     {
+      "Ref": "TelemetryIngestFunctionServiceRole94C01EF4"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/TelemetryIngestFunction/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "TelemetryIngestFunction64DF56ED": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "e35ae991549d83fbe7e4281b68eb396e1b4159bc7a9139e572ca5deb768303a5.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "TELEMETRY_BUCKET": {
+       "Ref": "TelemetryBucket710FF2C8"
+      },
+      "EVENT_BUS_NAME": {
+       "Ref": "EventBus7B8748AA"
+      },
+      "TELEMETRY_CACHE_TABLE": {
+       "Ref": "TelemetryCacheD29A0395"
+      }
+     }
+    },
+    "Handler": "index.handler",
+    "MemorySize": 256,
+    "Role": {
+     "Fn::GetAtt": [
+      "TelemetryIngestFunctionServiceRole94C01EF4",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "TelemetryIngestFunctionServiceRoleDefaultPolicy4F53FC83",
+    "TelemetryIngestFunctionServiceRole94C01EF4"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/TelemetryIngestFunction/Resource",
+    "aws:asset:path": "asset.e35ae991549d83fbe7e4281b68eb396e1b4159bc7a9139e572ca5deb768303a5",
+    "aws:asset:is-bundled": true,
+    "aws:asset:property": "Code"
+   }
+  },
+  "SignatureMatcherV2FunctionServiceRoleE84DC5FB": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/SignatureMatcherV2Function/ServiceRole/Resource"
+   }
+  },
+  "SignatureMatcherV2FunctionServiceRoleDefaultPolicy4FB055C1": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "dynamodb:PutItem",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "SignaturesTable79733A9C",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": "events:PutEvents",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "EventBus7B8748AA",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": "sns:Publish",
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "CascadeAlertsTopicE8D9159D"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "SignatureMatcherV2FunctionServiceRoleDefaultPolicy4FB055C1",
+    "Roles": [
+     {
+      "Ref": "SignatureMatcherV2FunctionServiceRoleE84DC5FB"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/SignatureMatcherV2Function/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "SignatureMatcherV2Function685ABEDA": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "7022f87ad090a32705bd3b3ec5f3860b1ba1a468d89cb1560d20421bf3a65c0a.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "SIGNATURES_TABLE_NAME": {
+       "Ref": "SignaturesTable79733A9C"
+      },
+      "EVENT_BUS_NAME": {
+       "Ref": "EventBus7B8748AA"
+      },
+      "ALERT_TOPIC_ARN": {
+       "Ref": "CascadeAlertsTopicE8D9159D"
+      }
+     }
+    },
+    "Handler": "index.handler",
+    "MemorySize": 256,
+    "Role": {
+     "Fn::GetAtt": [
+      "SignatureMatcherV2FunctionServiceRoleE84DC5FB",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "SignatureMatcherV2FunctionServiceRoleDefaultPolicy4FB055C1",
+    "SignatureMatcherV2FunctionServiceRoleE84DC5FB"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/SignatureMatcherV2Function/Resource",
+    "aws:asset:path": "asset.7022f87ad090a32705bd3b3ec5f3860b1ba1a468d89cb1560d20421bf3a65c0a",
+    "aws:asset:is-bundled": true,
+    "aws:asset:property": "Code"
+   }
+  },
+  "AnomalyToSignatureV2Rule60FFBFC8": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "EventBusName": {
+     "Ref": "EventBus7B8748AA"
+    },
+    "EventPattern": {
+     "source": [
+      "cascade-prevention.anomaly"
+     ],
+     "detail-type": [
+      "AnomalyDetected"
+     ]
+    },
+    "State": "ENABLED",
+    "Targets": [
+     {
+      "Arn": {
+       "Fn::GetAtt": [
+        "SignatureMatcherV2Function685ABEDA",
+        "Arn"
+       ]
+      },
+      "Id": "Target0"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/AnomalyToSignatureV2Rule/Resource"
+   }
+  },
+  "AnomalyToSignatureV2RuleAllowEventRuleCascadePreventionStackSignatureMatcherV2FunctionDF3DE91E1D064548": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "SignatureMatcherV2Function685ABEDA",
+      "Arn"
+     ]
+    },
+    "Principal": "events.amazonaws.com",
+    "SourceArn": {
+     "Fn::GetAtt": [
+      "AnomalyToSignatureV2Rule60FFBFC8",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/AnomalyToSignatureV2Rule/AllowEventRuleCascadePreventionStackSignatureMatcherV2FunctionDF3DE91E"
+   }
+  },
+  "CascadeApiFunctionServiceRole985E4FA0": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadeApiFunction/ServiceRole/Resource"
+   }
+  },
+  "CascadeApiFunctionServiceRoleDefaultPolicyAEA15CBB": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:Query",
+        "dynamodb:Scan"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "DependencyGraph3324833E",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::GetAtt": [
+          "RemediationPlansTableC30E9BB6",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::GetAtt": [
+          "SignaturesTable79733A9C",
+          "Arn"
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "events:PutEvents",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "EventBus7B8748AA",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": "sns:Publish",
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "CascadeAlertsTopicE8D9159D"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "CascadeApiFunctionServiceRoleDefaultPolicyAEA15CBB",
+    "Roles": [
+     {
+      "Ref": "CascadeApiFunctionServiceRole985E4FA0"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadeApiFunction/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "CascadeApiFunctionA3D6FDC5": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "a16ea12e9f62cd4385d5623fbc52c039e91ce98b28ec616f0dff9f34239585c6.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "DEPENDENCY_GRAPH_TABLE": {
+       "Ref": "DependencyGraph3324833E"
+      },
+      "SIGNATURES_TABLE_NAME": {
+       "Ref": "SignaturesTable79733A9C"
+      },
+      "REMEDIATION_PLANS_TABLE": {
+       "Ref": "RemediationPlansTableC30E9BB6"
+      },
+      "EVENT_BUS_NAME": {
+       "Ref": "EventBus7B8748AA"
+      },
+      "ALERT_TOPIC_ARN": {
+       "Ref": "CascadeAlertsTopicE8D9159D"
+      }
+     }
+    },
+    "Handler": "index.handler",
+    "MemorySize": 256,
+    "Role": {
+     "Fn::GetAtt": [
+      "CascadeApiFunctionServiceRole985E4FA0",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "CascadeApiFunctionServiceRoleDefaultPolicyAEA15CBB",
+    "CascadeApiFunctionServiceRole985E4FA0"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadeApiFunction/Resource",
+    "aws:asset:path": "asset.a16ea12e9f62cd4385d5623fbc52c039e91ce98b28ec616f0dff9f34239585c6",
+    "aws:asset:is-bundled": true,
+    "aws:asset:property": "Code"
+   }
+  },
+  "WebhookNotifierFunctionServiceRole4BF7F05E": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/WebhookNotifierFunction/ServiceRole/Resource"
+   }
+  },
+  "WebhookNotifierFunctionDA2193A9": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "01455685c9ab33eb684e55e7fa98fec3de446c5dfaf87b49ce41b410e761529a.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "WEBHOOK_URL": "",
+      "SLACK_WEBHOOK_URL": "",
+      "TEAMS_WEBHOOK_URL": "",
+      "STATUSPAGE_WEBHOOK_URL": "",
+      "WEBHOOK_ENABLED": "false"
+     }
+    },
+    "Handler": "index.handler",
+    "MemorySize": 256,
+    "Role": {
+     "Fn::GetAtt": [
+      "WebhookNotifierFunctionServiceRole4BF7F05E",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "WebhookNotifierFunctionServiceRole4BF7F05E"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/WebhookNotifierFunction/Resource",
+    "aws:asset:path": "asset.01455685c9ab33eb684e55e7fa98fec3de446c5dfaf87b49ce41b410e761529a",
+    "aws:asset:is-bundled": true,
+    "aws:asset:property": "Code"
+   }
+  },
+  "RemediationActionExecutorFunctionServiceRole69F7E249": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/RemediationActionExecutorFunction/ServiceRole/Resource"
+   }
+  },
+  "RemediationActionExecutorFunctionServiceRoleDefaultPolicyCFF169D2": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "events:PutEvents",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "EventBus7B8748AA",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "RemediationActionExecutorFunctionServiceRoleDefaultPolicyCFF169D2",
+    "Roles": [
+     {
+      "Ref": "RemediationActionExecutorFunctionServiceRole69F7E249"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/RemediationActionExecutorFunction/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "RemediationActionExecutorFunction01CD4876": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "e102dcf55b0f6da1767537ed867d42b045311f828d79ce0245744864381cc537.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "EVENT_BUS_NAME": {
+       "Ref": "EventBus7B8748AA"
+      }
+     }
+    },
+    "Handler": "index.handler",
+    "MemorySize": 256,
+    "Role": {
+     "Fn::GetAtt": [
+      "RemediationActionExecutorFunctionServiceRole69F7E249",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "RemediationActionExecutorFunctionServiceRoleDefaultPolicyCFF169D2",
+    "RemediationActionExecutorFunctionServiceRole69F7E249"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/RemediationActionExecutorFunction/Resource",
+    "aws:asset:path": "asset.e102dcf55b0f6da1767537ed867d42b045311f828d79ce0245744864381cc537",
+    "aws:asset:is-bundled": true,
+    "aws:asset:property": "Code"
+   }
+  },
+  "RemediationStateMachineRoleA737E218": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "states.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/RemediationStateMachine/Role/Resource"
+   }
+  },
+  "RemediationStateMachineRoleDefaultPolicyC84AFBF6": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "lambda:InvokeFunction",
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "RemediationActionExecutorFunction01CD4876",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "RemediationActionExecutorFunction01CD4876",
+             "Arn"
+            ]
+           },
+           ":*"
+          ]
+         ]
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "RemediationStateMachineRoleDefaultPolicyC84AFBF6",
+    "Roles": [
+     {
+      "Ref": "RemediationStateMachineRoleA737E218"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/RemediationStateMachine/Role/DefaultPolicy/Resource"
+   }
+  },
+  "RemediationStateMachine769D94C7": {
+   "Type": "AWS::StepFunctions::StateMachine",
+   "Properties": {
+    "DefinitionString": {
+     "Fn::Join": [
+      "",
+      [
+       "{\"StartAt\":\"ExecuteActionsMap\",\"States\":{\"ExecuteActionsMap\":{\"Type\":\"Map\",\"Next\":\"PlanExecutionSucceeded\",\"Catch\":[{\"ErrorEquals\":[\"States.ALL\"],\"Next\":\"RollbackActionsMap\"}],\"ItemsPath\":\"$.actions\",\"ItemProcessor\":{\"ProcessorConfig\":{\"Mode\":\"INLINE\"},\"StartAt\":\"ExecuteActionStep\",\"States\":{\"ExecuteActionStep\":{\"End\":true,\"Retry\":[{\"ErrorEquals\":[\"Lambda.ClientExecutionTimeoutException\",\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":states:::lambda:invoke\",\"Parameters\":{\"FunctionName\":\"",
+       {
+        "Fn::GetAtt": [
+         "RemediationActionExecutorFunction01CD4876",
+         "Arn"
+        ]
+       },
+       "\",\"Payload\":{\"planId.$\":\"$.planId\",\"signatureId.$\":\"$.signatureId\",\"mode\":\"execute\",\"action.$\":\"$$.Map.Item.Value\"}}}}},\"MaxConcurrency\":1},\"PlanExecutionSucceeded\":{\"Type\":\"Succeed\"},\"RollbackActionsMap\":{\"Type\":\"Map\",\"Next\":\"PlanExecutionFailed\",\"ItemsPath\":\"$.rollbackActions\",\"ItemProcessor\":{\"ProcessorConfig\":{\"Mode\":\"INLINE\"},\"StartAt\":\"RollbackActionStep\",\"States\":{\"RollbackActionStep\":{\"End\":true,\"Retry\":[{\"ErrorEquals\":[\"Lambda.ClientExecutionTimeoutException\",\"Lambda.ServiceException\",\"Lambda.AWSLambdaException\",\"Lambda.SdkClientException\"],\"IntervalSeconds\":2,\"MaxAttempts\":6,\"BackoffRate\":2}],\"Type\":\"Task\",\"OutputPath\":\"$.Payload\",\"Resource\":\"arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":states:::lambda:invoke\",\"Parameters\":{\"FunctionName\":\"",
+       {
+        "Fn::GetAtt": [
+         "RemediationActionExecutorFunction01CD4876",
+         "Arn"
+        ]
+       },
+       "\",\"Payload\":{\"planId.$\":\"$.planId\",\"signatureId.$\":\"$.signatureId\",\"mode\":\"rollback\",\"action.$\":\"$$.Map.Item.Value\"}}}}},\"MaxConcurrency\":1},\"PlanExecutionFailed\":{\"Type\":\"Fail\"}},\"TimeoutSeconds\":300}"
+      ]
+     ]
+    },
+    "RoleArn": {
+     "Fn::GetAtt": [
+      "RemediationStateMachineRoleA737E218",
+      "Arn"
+     ]
+    }
+   },
+   "DependsOn": [
+    "RemediationStateMachineRoleDefaultPolicyC84AFBF6",
+    "RemediationStateMachineRoleA737E218"
+   ],
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/RemediationStateMachine/Resource"
+   }
+  },
+  "RemediationPlannerFunctionServiceRole8E570FF8": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/RemediationPlannerFunction/ServiceRole/Resource"
+   }
+  },
+  "RemediationPlannerFunctionServiceRoleDefaultPolicy3A917EE1": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "dynamodb:PutItem",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "RemediationPlansTableC30E9BB6",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": "events:PutEvents",
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "EventBus7B8748AA",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": "states:StartExecution",
+       "Effect": "Allow",
+       "Resource": {
+        "Ref": "RemediationStateMachine769D94C7"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "RemediationPlannerFunctionServiceRoleDefaultPolicy3A917EE1",
+    "Roles": [
+     {
+      "Ref": "RemediationPlannerFunctionServiceRole8E570FF8"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/RemediationPlannerFunction/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "RemediationPlannerFunction6BFACA1C": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "6fc514043ce6042d5247923db736014739074d33feb581816dfa984599252f11.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "REMEDIATION_PLANS_TABLE": {
+       "Ref": "RemediationPlansTableC30E9BB6"
+      },
+      "EVENT_BUS_NAME": {
+       "Ref": "EventBus7B8748AA"
+      },
+      "REMEDIATION_STATE_MACHINE_ARN": {
+       "Ref": "RemediationStateMachine769D94C7"
+      }
+     }
+    },
+    "Handler": "index.handler",
+    "MemorySize": 256,
+    "Role": {
+     "Fn::GetAtt": [
+      "RemediationPlannerFunctionServiceRole8E570FF8",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs18.x",
+    "Timeout": 30
+   },
+   "DependsOn": [
+    "RemediationPlannerFunctionServiceRoleDefaultPolicy3A917EE1",
+    "RemediationPlannerFunctionServiceRole8E570FF8"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/RemediationPlannerFunction/Resource",
+    "aws:asset:path": "asset.6fc514043ce6042d5247923db736014739074d33feb581816dfa984599252f11",
+    "aws:asset:is-bundled": true,
+    "aws:asset:property": "Code"
+   }
+  },
+  "PredictionToRemediationRule5054A339": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "EventBusName": {
+     "Ref": "EventBus7B8748AA"
+    },
+    "EventPattern": {
+     "source": [
+      "cascade-prevention.prediction"
+     ],
+     "detail-type": [
+      "CascadePathPredicted"
+     ]
+    },
+    "State": "ENABLED",
+    "Targets": [
+     {
+      "Arn": {
+       "Fn::GetAtt": [
+        "RemediationPlannerFunction6BFACA1C",
+        "Arn"
+       ]
+      },
+      "Id": "Target0"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/PredictionToRemediationRule/Resource"
+   }
+  },
+  "PredictionToRemediationRuleAllowEventRuleCascadePreventionStackRemediationPlannerFunction28E5B915CE56568D": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "RemediationPlannerFunction6BFACA1C",
+      "Arn"
+     ]
+    },
+    "Principal": "events.amazonaws.com",
+    "SourceArn": {
+     "Fn::GetAtt": [
+      "PredictionToRemediationRule5054A339",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/PredictionToRemediationRule/AllowEventRuleCascadePreventionStackRemediationPlannerFunction28E5B915"
+   }
+  },
+  "IntegrationEventRuleA28EBF6E": {
+   "Type": "AWS::Events::Rule",
+   "Properties": {
+    "EventBusName": {
+     "Ref": "EventBus7B8748AA"
+    },
+    "EventPattern": {
+     "source": [
+      "cascade-prevention.signature",
+      "cascade-prevention.prediction",
+      "cascade-prevention.remediation"
+     ],
+     "detail-type": [
+      "CascadeSignatureDetected",
+      "CascadePathPredicted",
+      "RemediationActionRecorded"
+     ]
+    },
+    "State": "ENABLED",
+    "Targets": [
+     {
+      "Arn": {
+       "Fn::GetAtt": [
+        "WebhookNotifierFunctionDA2193A9",
+        "Arn"
+       ]
+      },
+      "Id": "Target0"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/IntegrationEventRule/Resource"
+   }
+  },
+  "IntegrationEventRuleAllowEventRuleCascadePreventionStackWebhookNotifierFunction5652D1A51B6CF2A1": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "WebhookNotifierFunctionDA2193A9",
+      "Arn"
+     ]
+    },
+    "Principal": "events.amazonaws.com",
+    "SourceArn": {
+     "Fn::GetAtt": [
+      "IntegrationEventRuleA28EBF6E",
+      "Arn"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/IntegrationEventRule/AllowEventRuleCascadePreventionStackWebhookNotifierFunction5652D1A5"
+   }
+  },
+  "CascadePreventionApiC1B264F4": {
+   "Type": "AWS::ApiGateway::RestApi",
+   "Properties": {
+    "Description": "MVP API for cascade prevention telemetry and operator interfaces",
+    "Name": "CascadePreventionApi"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Resource"
+   }
+  },
+  "CascadePreventionApiDeploymentF8AFB88511edcbe92d147bf83bef851bfda9db8f": {
+   "Type": "AWS::ApiGateway::Deployment",
+   "Properties": {
+    "Description": "MVP API for cascade prevention telemetry and operator interfaces",
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "DependsOn": [
+    "CascadeApiAuthorizer7D8F1806",
+    "CascadePreventionApicascadesignaturesactiveGET45B32327",
+    "CascadePreventionApicascadesignaturesactiveOPTIONS09693B3B",
+    "CascadePreventionApicascadesignaturesactive777A573D",
+    "CascadePreventionApicascadesignaturesOPTIONS285F399E",
+    "CascadePreventionApicascadesignaturesA85009AF",
+    "CascadePreventionApidependencygraphGET2E9AD7F1",
+    "CascadePreventionApidependencygraphOPTIONS79088A9A",
+    "CascadePreventionApidependencygraph47388B31",
+    "CascadePreventionApiOPTIONS6C26B874",
+    "CascadePreventionApiremediationplansplanIdapprovalOPTIONSFCA7D10B",
+    "CascadePreventionApiremediationplansplanIdapprovalPOSTF97A3654",
+    "CascadePreventionApiremediationplansplanIdapprovalE74C4FA1",
+    "CascadePreventionApiremediationplansplanIdOPTIONSC85E24D6",
+    "CascadePreventionApiremediationplansplanIdF622C81E",
+    "CascadePreventionApiremediationplansGET9F00FD5A",
+    "CascadePreventionApiremediationplansOPTIONSDBBEFEC6",
+    "CascadePreventionApiremediationplansE9F163CB",
+    "CascadePreventionApitelemetryingestOPTIONS93E589B6",
+    "CascadePreventionApitelemetryingestPOST774CCC31",
+    "CascadePreventionApitelemetryingest245E4A33",
+    "CascadePreventionApitelemetryOPTIONS802B7DED",
+    "CascadePreventionApitelemetryF4536F37"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Deployment/Resource",
+    "aws:cdk:do-not-refactor": true
+   }
+  },
+  "CascadePreventionApiDeploymentStagev1C2FEFAF6": {
+   "Type": "AWS::ApiGateway::Stage",
+   "Properties": {
+    "DeploymentId": {
+     "Ref": "CascadePreventionApiDeploymentF8AFB88511edcbe92d147bf83bef851bfda9db8f"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    },
+    "StageName": "v1"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/DeploymentStage.v1/Resource"
+   }
+  },
+  "CascadePreventionApiOPTIONS6C26B874": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Fn::GetAtt": [
+      "CascadePreventionApiC1B264F4",
+      "RootResourceId"
+     ]
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/OPTIONS/Resource"
+   }
+  },
+  "CascadePreventionApitelemetryF4536F37": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "CascadePreventionApiC1B264F4",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "telemetry",
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/telemetry/Resource"
+   }
+  },
+  "CascadePreventionApitelemetryOPTIONS802B7DED": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApitelemetryF4536F37"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/telemetry/OPTIONS/Resource"
+   }
+  },
+  "CascadePreventionApitelemetryingest245E4A33": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "CascadePreventionApitelemetryF4536F37"
+    },
+    "PathPart": "ingest",
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/telemetry/ingest/Resource"
+   }
+  },
+  "CascadePreventionApitelemetryingestOPTIONS93E589B6": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApitelemetryingest245E4A33"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/telemetry/ingest/OPTIONS/Resource"
+   }
+  },
+  "CascadePreventionApitelemetryingestPOSTApiPermissionCascadePreventionStackCascadePreventionApiACAC9F72POSTtelemetryingestDA987E99": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "TelemetryIngestFunction64DF56ED",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:593688888943:",
+       {
+        "Ref": "CascadePreventionApiC1B264F4"
+       },
+       "/",
+       {
+        "Ref": "CascadePreventionApiDeploymentStagev1C2FEFAF6"
+       },
+       "/POST/telemetry/ingest"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/telemetry/ingest/POST/ApiPermission.CascadePreventionStackCascadePreventionApiACAC9F72.POST..telemetry.ingest"
+   }
+  },
+  "CascadePreventionApitelemetryingestPOSTApiPermissionTestCascadePreventionStackCascadePreventionApiACAC9F72POSTtelemetryingest142FB485": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "TelemetryIngestFunction64DF56ED",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:593688888943:",
+       {
+        "Ref": "CascadePreventionApiC1B264F4"
+       },
+       "/test-invoke-stage/POST/telemetry/ingest"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/telemetry/ingest/POST/ApiPermission.Test.CascadePreventionStackCascadePreventionApiACAC9F72.POST..telemetry.ingest"
+   }
+  },
+  "CascadePreventionApitelemetryingestPOST774CCC31": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "AuthorizationType": "AWS_IAM",
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "TelemetryIngestFunction64DF56ED",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "CascadePreventionApitelemetryingest245E4A33"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/telemetry/ingest/POST/Resource"
+   }
+  },
+  "CascadePreventionApidependencygraph47388B31": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "CascadePreventionApiC1B264F4",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "dependency-graph",
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/dependency-graph/Resource"
+   }
+  },
+  "CascadePreventionApidependencygraphOPTIONS79088A9A": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApidependencygraph47388B31"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/dependency-graph/OPTIONS/Resource"
+   }
+  },
+  "CascadePreventionApidependencygraphGETApiPermissionCascadePreventionStackCascadePreventionApiACAC9F72GETdependencygraph38180E3A": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "CascadeApiFunctionA3D6FDC5",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:593688888943:",
+       {
+        "Ref": "CascadePreventionApiC1B264F4"
+       },
+       "/",
+       {
+        "Ref": "CascadePreventionApiDeploymentStagev1C2FEFAF6"
+       },
+       "/GET/dependency-graph"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/dependency-graph/GET/ApiPermission.CascadePreventionStackCascadePreventionApiACAC9F72.GET..dependency-graph"
+   }
+  },
+  "CascadePreventionApidependencygraphGETApiPermissionTestCascadePreventionStackCascadePreventionApiACAC9F72GETdependencygraphF2A2B4E4": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "CascadeApiFunctionA3D6FDC5",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:593688888943:",
+       {
+        "Ref": "CascadePreventionApiC1B264F4"
+       },
+       "/test-invoke-stage/GET/dependency-graph"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/dependency-graph/GET/ApiPermission.Test.CascadePreventionStackCascadePreventionApiACAC9F72.GET..dependency-graph"
+   }
+  },
+  "CascadePreventionApidependencygraphGET2E9AD7F1": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CascadeApiAuthorizer7D8F1806"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "CascadeApiFunctionA3D6FDC5",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "CascadePreventionApidependencygraph47388B31"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/dependency-graph/GET/Resource"
+   }
+  },
+  "CascadePreventionApicascadesignaturesA85009AF": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "CascadePreventionApiC1B264F4",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "cascade-signatures",
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/Resource"
+   }
+  },
+  "CascadePreventionApicascadesignaturesOPTIONS285F399E": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApicascadesignaturesA85009AF"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/OPTIONS/Resource"
+   }
+  },
+  "CascadePreventionApicascadesignaturesactive777A573D": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "CascadePreventionApicascadesignaturesA85009AF"
+    },
+    "PathPart": "active",
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/active/Resource"
+   }
+  },
+  "CascadePreventionApicascadesignaturesactiveOPTIONS09693B3B": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApicascadesignaturesactive777A573D"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/active/OPTIONS/Resource"
+   }
+  },
+  "CascadePreventionApicascadesignaturesactiveGETApiPermissionCascadePreventionStackCascadePreventionApiACAC9F72GETcascadesignaturesactive356B7785": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "CascadeApiFunctionA3D6FDC5",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:593688888943:",
+       {
+        "Ref": "CascadePreventionApiC1B264F4"
+       },
+       "/",
+       {
+        "Ref": "CascadePreventionApiDeploymentStagev1C2FEFAF6"
+       },
+       "/GET/cascade-signatures/active"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/active/GET/ApiPermission.CascadePreventionStackCascadePreventionApiACAC9F72.GET..cascade-signatures.active"
+   }
+  },
+  "CascadePreventionApicascadesignaturesactiveGETApiPermissionTestCascadePreventionStackCascadePreventionApiACAC9F72GETcascadesignaturesactive61C02C9B": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "CascadeApiFunctionA3D6FDC5",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:593688888943:",
+       {
+        "Ref": "CascadePreventionApiC1B264F4"
+       },
+       "/test-invoke-stage/GET/cascade-signatures/active"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/active/GET/ApiPermission.Test.CascadePreventionStackCascadePreventionApiACAC9F72.GET..cascade-signatures.active"
+   }
+  },
+  "CascadePreventionApicascadesignaturesactiveGET45B32327": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CascadeApiAuthorizer7D8F1806"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "CascadeApiFunctionA3D6FDC5",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "CascadePreventionApicascadesignaturesactive777A573D"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/active/GET/Resource"
+   }
+  },
+  "CascadePreventionApiremediationplansE9F163CB": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "CascadePreventionApiC1B264F4",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "remediation-plans",
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/Resource"
+   }
+  },
+  "CascadePreventionApiremediationplansOPTIONSDBBEFEC6": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApiremediationplansE9F163CB"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/OPTIONS/Resource"
+   }
+  },
+  "CascadePreventionApiremediationplansGETApiPermissionCascadePreventionStackCascadePreventionApiACAC9F72GETremediationplansADC02F7D": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "CascadeApiFunctionA3D6FDC5",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:593688888943:",
+       {
+        "Ref": "CascadePreventionApiC1B264F4"
+       },
+       "/",
+       {
+        "Ref": "CascadePreventionApiDeploymentStagev1C2FEFAF6"
+       },
+       "/GET/remediation-plans"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/GET/ApiPermission.CascadePreventionStackCascadePreventionApiACAC9F72.GET..remediation-plans"
+   }
+  },
+  "CascadePreventionApiremediationplansGETApiPermissionTestCascadePreventionStackCascadePreventionApiACAC9F72GETremediationplansD9EA1C06": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "CascadeApiFunctionA3D6FDC5",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:593688888943:",
+       {
+        "Ref": "CascadePreventionApiC1B264F4"
+       },
+       "/test-invoke-stage/GET/remediation-plans"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/GET/ApiPermission.Test.CascadePreventionStackCascadePreventionApiACAC9F72.GET..remediation-plans"
+   }
+  },
+  "CascadePreventionApiremediationplansGET9F00FD5A": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CascadeApiAuthorizer7D8F1806"
+    },
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "CascadeApiFunctionA3D6FDC5",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "CascadePreventionApiremediationplansE9F163CB"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/GET/Resource"
+   }
+  },
+  "CascadePreventionApiremediationplansplanIdF622C81E": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "CascadePreventionApiremediationplansE9F163CB"
+    },
+    "PathPart": "{planId}",
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/Resource"
+   }
+  },
+  "CascadePreventionApiremediationplansplanIdOPTIONSC85E24D6": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApiremediationplansplanIdF622C81E"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/OPTIONS/Resource"
+   }
+  },
+  "CascadePreventionApiremediationplansplanIdapprovalE74C4FA1": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "CascadePreventionApiremediationplansplanIdF622C81E"
+    },
+    "PathPart": "approval",
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/approval/Resource"
+   }
+  },
+  "CascadePreventionApiremediationplansplanIdapprovalOPTIONSFCA7D10B": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApiremediationplansplanIdapprovalE74C4FA1"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/approval/OPTIONS/Resource"
+   }
+  },
+  "CascadePreventionApiremediationplansplanIdapprovalPOSTApiPermissionCascadePreventionStackCascadePreventionApiACAC9F72POSTremediationplansplanIdapprovalB6278D47": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "CascadeApiFunctionA3D6FDC5",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:593688888943:",
+       {
+        "Ref": "CascadePreventionApiC1B264F4"
+       },
+       "/",
+       {
+        "Ref": "CascadePreventionApiDeploymentStagev1C2FEFAF6"
+       },
+       "/POST/remediation-plans/*/approval"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/approval/POST/ApiPermission.CascadePreventionStackCascadePreventionApiACAC9F72.POST..remediation-plans.{planId}.approval"
+   }
+  },
+  "CascadePreventionApiremediationplansplanIdapprovalPOSTApiPermissionTestCascadePreventionStackCascadePreventionApiACAC9F72POSTremediationplansplanIdapproval451FF01B": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "CascadeApiFunctionA3D6FDC5",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:593688888943:",
+       {
+        "Ref": "CascadePreventionApiC1B264F4"
+       },
+       "/test-invoke-stage/POST/remediation-plans/*/approval"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/approval/POST/ApiPermission.Test.CascadePreventionStackCascadePreventionApiACAC9F72.POST..remediation-plans.{planId}.approval"
+   }
+  },
+  "CascadePreventionApiremediationplansplanIdapprovalPOSTF97A3654": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "COGNITO_USER_POOLS",
+    "AuthorizerId": {
+     "Ref": "CascadeApiAuthorizer7D8F1806"
+    },
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "CascadeApiFunctionA3D6FDC5",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "CascadePreventionApiremediationplansplanIdapprovalE74C4FA1"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/approval/POST/Resource"
+   }
+  },
+  "CascadePreventionApiCascadeOperatorApiKey236D4D80": {
+   "Type": "AWS::ApiGateway::ApiKey",
+   "Properties": {
+    "Enabled": true,
+    "Name": "CascadeOperatorApiKey",
+    "StageKeys": [
+     {
+      "RestApiId": {
+       "Ref": "CascadePreventionApiC1B264F4"
+      },
+      "StageName": {
+       "Ref": "CascadePreventionApiDeploymentStagev1C2FEFAF6"
+      }
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/CascadeOperatorApiKey/Resource"
+   }
+  },
+  "CascadePreventionApiCascadeApiUsagePlan9DC1FBD2": {
+   "Type": "AWS::ApiGateway::UsagePlan",
+   "Properties": {
+    "ApiStages": [
+     {
+      "ApiId": {
+       "Ref": "CascadePreventionApiC1B264F4"
+      },
+      "Stage": {
+       "Ref": "CascadePreventionApiDeploymentStagev1C2FEFAF6"
+      },
+      "Throttle": {
+       "/dependency-graph/GET": {
+        "BurstLimit": 200,
+        "RateLimit": 16.666666666666668
+       },
+       "/cascade-signatures/active/GET": {
+        "BurstLimit": 200,
+        "RateLimit": 16.666666666666668
+       },
+       "/remediation-plans/GET": {
+        "BurstLimit": 200,
+        "RateLimit": 16.666666666666668
+       },
+       "/remediation-plans/{planId}/approval/POST": {
+        "BurstLimit": 200,
+        "RateLimit": 16.666666666666668
+       }
+      }
+     }
+    ],
+    "Throttle": {
+     "BurstLimit": 200,
+     "RateLimit": 16.666666666666668
+    },
+    "UsagePlanName": "CascadeApiUsagePlan"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/CascadeApiUsagePlan/Resource"
+   }
+  },
+  "CascadePreventionApiCascadeApiUsagePlanUsagePlanKeyResourceCascadePreventionStackCascadePreventionApiCascadeOperatorApiKey77DAB2B0000907A6": {
+   "Type": "AWS::ApiGateway::UsagePlanKey",
+   "Properties": {
+    "KeyId": {
+     "Ref": "CascadePreventionApiCascadeOperatorApiKey236D4D80"
+    },
+    "KeyType": "API_KEY",
+    "UsagePlanId": {
+     "Ref": "CascadePreventionApiCascadeApiUsagePlan9DC1FBD2"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/CascadeApiUsagePlan/UsagePlanKeyResource:CascadePreventionStackCascadePreventionApiCascadeOperatorApiKey77DAB2B0"
+   }
+  },
+  "CascadePreventionUserPoolsmsRole32853050": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Condition": {
+        "StringEquals": {
+         "sts:ExternalId": "CascadePreventionStackCascadePreventionUserPool9DAEDFC5"
+        }
+       },
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "cognito-idp.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Policies": [
+     {
+      "PolicyDocument": {
+       "Statement": [
+        {
+         "Action": "sns:Publish",
+         "Effect": "Allow",
+         "Resource": "*"
+        }
+       ],
+       "Version": "2012-10-17"
+      },
+      "PolicyName": "sns-publish"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionUserPool/smsRole/Resource"
+   }
+  },
+  "CascadePreventionUserPool311240B3": {
+   "Type": "AWS::Cognito::UserPool",
+   "Properties": {
+    "AccountRecoverySetting": {
+     "RecoveryMechanisms": [
+      {
+       "Name": "verified_email",
+       "Priority": 1
+      }
+     ]
+    },
+    "AdminCreateUserConfig": {
+     "AllowAdminCreateUserOnly": true
+    },
+    "AutoVerifiedAttributes": [
+     "email"
+    ],
+    "EmailVerificationMessage": "The verification code to your new account is {####}",
+    "EmailVerificationSubject": "Verify your new account",
+    "EnabledMfas": [
+     "SMS_MFA"
+    ],
+    "MfaConfiguration": "OPTIONAL",
+    "Policies": {
+     "PasswordPolicy": {
+      "MinimumLength": 12,
+      "RequireLowercase": true,
+      "RequireNumbers": true,
+      "RequireSymbols": true,
+      "RequireUppercase": true
+     }
+    },
+    "Schema": [
+     {
+      "Mutable": false,
+      "Name": "email",
+      "Required": true
+     }
+    ],
+    "SmsConfiguration": {
+     "ExternalId": "CascadePreventionStackCascadePreventionUserPool9DAEDFC5",
+     "SnsCallerArn": {
+      "Fn::GetAtt": [
+       "CascadePreventionUserPoolsmsRole32853050",
+       "Arn"
+      ]
+     }
+    },
+    "SmsVerificationMessage": "The verification code to your new account is {####}",
+    "UserPoolName": "CascadePreventionUsers",
+    "UsernameAttributes": [
+     "email"
+    ],
+    "VerificationMessageTemplate": {
+     "DefaultEmailOption": "CONFIRM_WITH_CODE",
+     "EmailMessage": "The verification code to your new account is {####}",
+     "EmailSubject": "Verify your new account",
+     "SmsMessage": "The verification code to your new account is {####}"
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionUserPool/Resource"
+   }
+  },
+  "CascadePreventionUserPoolClientE5576613": {
+   "Type": "AWS::Cognito::UserPoolClient",
+   "Properties": {
+    "AllowedOAuthFlows": [
+     "implicit",
+     "code"
+    ],
+    "AllowedOAuthFlowsUserPoolClient": true,
+    "AllowedOAuthScopes": [
+     "profile",
+     "phone",
+     "email",
+     "openid",
+     "aws.cognito.signin.user.admin"
+    ],
+    "CallbackURLs": [
+     "https://example.com"
+    ],
+    "ExplicitAuthFlows": [
+     "ALLOW_USER_PASSWORD_AUTH",
+     "ALLOW_USER_SRP_AUTH",
+     "ALLOW_REFRESH_TOKEN_AUTH"
+    ],
+    "GenerateSecret": false,
+    "SupportedIdentityProviders": [
+     "COGNITO"
+    ],
+    "UserPoolId": {
+     "Ref": "CascadePreventionUserPool311240B3"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionUserPoolClient/Resource"
+   }
+  },
+  "CascadeApiAuthorizer7D8F1806": {
+   "Type": "AWS::ApiGateway::Authorizer",
+   "Properties": {
+    "IdentitySource": "method.request.header.Authorization",
+    "Name": "CascadePreventionStackCascadeApiAuthorizerF8F3BA96",
+    "ProviderARNs": [
+     {
+      "Fn::GetAtt": [
+       "CascadePreventionUserPool311240B3",
+       "Arn"
+      ]
+     }
+    ],
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    },
+    "Type": "COGNITO_USER_POOLS"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadeApiAuthorizer/Resource"
+   }
+  }
+ },
+ "Outputs": {
+  "DependencyGraphTableName": {
+   "Description": "DynamoDB table for dependency graph",
+   "Value": {
+    "Ref": "DependencyGraph3324833E"
+   },
+   "Export": {
+    "Name": "CascadePrevention-DependencyGraphTable"
+   }
+  },
+  "TelemetryCacheTableName": {
+   "Description": "DynamoDB table for telemetry cache",
+   "Value": {
+    "Ref": "TelemetryCacheD29A0395"
+   },
+   "Export": {
+    "Name": "CascadePrevention-TelemetryCacheTable"
+   }
+  },
+  "CircuitBreakerStateTableName": {
+   "Description": "DynamoDB table for circuit breaker state",
+   "Value": {
+    "Ref": "CircuitBreakerStateB39870D9"
+   },
+   "Export": {
+    "Name": "CascadePrevention-CircuitBreakerStateTable"
+   }
+  },
+  "TelemetryBucketName": {
+   "Description": "S3 bucket for telemetry storage",
+   "Value": {
+    "Ref": "TelemetryBucket710FF2C8"
+   },
+   "Export": {
+    "Name": "CascadePrevention-TelemetryBucket"
+   }
+  },
+  "SnapshotBucketName": {
+   "Description": "S3 bucket for graph snapshots",
+   "Value": {
+    "Ref": "SnapshotBucketB2BF31D3"
+   },
+   "Export": {
+    "Name": "CascadePrevention-SnapshotBucket"
+   }
+  },
+  "EventBusName": {
+   "Description": "EventBridge event bus",
+   "Value": {
+    "Ref": "EventBus7B8748AA"
+   },
+   "Export": {
+    "Name": "CascadePrevention-EventBus"
+   }
+  },
+  "EncryptionKeyId": {
+   "Description": "KMS encryption key",
+   "Value": {
+    "Ref": "EncryptionKey1B843E66"
+   },
+   "Export": {
+    "Name": "CascadePrevention-EncryptionKey"
+   }
+  },
+  "ModelRegistryTableName": {
+   "Description": "DynamoDB table for model registry",
+   "Value": {
+    "Ref": "ModelRegistryB238A970"
+   },
+   "Export": {
+    "Name": "CascadePrevention-ModelRegistryTable"
+   }
+  },
+  "ModelDeployerRoleArn": {
+   "Description": "IAM role ARN for model deployer Lambda",
+   "Value": {
+    "Fn::GetAtt": [
+     "ModelDeployerRoleCAA817DE",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "CascadePrevention-ModelDeployerRoleArn"
+   }
+  },
+  "ModelDeployerFunctionName": {
+   "Description": "Lambda function name for model deployer",
+   "Value": {
+    "Ref": "ModelDeployerFunctionD83F8AD7"
+   },
+   "Export": {
+    "Name": "CascadePrevention-ModelDeployerFunctionName"
+   }
+  },
+  "AllowedBedrockModels": {
+   "Description": "Comma-separated list of Bedrock model ARNs allowed for invocation (ALL means wildcard)",
+   "Value": "ALL",
+   "Export": {
+    "Name": "CascadePrevention-AllowedBedrockModels"
+   }
+  },
+  "SignatureMatcherRoleArn": {
+   "Description": "IAM role ARN for Bedrock-consuming Lambdas (signature matcher)",
+   "Value": {
+    "Fn::GetAtt": [
+     "SignatureMatcherRoleDAC7EF4F",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "CascadePrevention-SignatureMatcherRoleArn"
+   }
+  },
+  "SignatureMatcherFunctionName": {
+   "Description": "Lambda function name for signature matcher",
+   "Value": {
+    "Ref": "SignatureMatcherFunction7CAC81A7"
+   },
+   "Export": {
+    "Name": "CascadePrevention-SignatureMatcherFunctionName"
+   }
+  },
+  "SignaturesTableName": {
+   "Description": "DynamoDB table for cascade signatures",
+   "Value": {
+    "Ref": "SignaturesTable79733A9C"
+   },
+   "Export": {
+    "Name": "CascadePrevention-SignaturesTable"
+   }
+  },
+  "OperationsConsoleBucketName": {
+   "Value": {
+    "Ref": "OperationsConsoleBucketD13072BC"
+   }
+  },
+  "OperationsConsoleCloudFrontDomain": {
+   "Value": {
+    "Fn::GetAtt": [
+     "OperationsConsoleDistribution9384F8A9",
+     "DomainName"
+    ]
+   }
+  },
+  "OperationsConsoleUrl": {
+   "Value": "https://aicpe.dev"
+  },
+  "ArticleSiteBucketName": {
+   "Value": {
+    "Ref": "ArticleSiteBucketF1B2E614"
+   }
+  },
+  "ArticleSiteCloudFrontDomain": {
+   "Value": {
+    "Fn::GetAtt": [
+     "ArticleSiteDistributionBC7D0080",
+     "DomainName"
+    ]
+   }
+  },
+  "ArticleSiteUrl": {
+   "Value": "https://article.aicpe.dev"
+  },
+  "CascadePreventionApiEndpoint7176775B": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "CascadePreventionApiC1B264F4"
+      },
+      ".execute-api.us-east-1.",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "CascadePreventionApiDeploymentStagev1C2FEFAF6"
+      },
+      "/"
+     ]
+    ]
+   }
+  },
+  "CascadePreventionUserPoolId": {
+   "Value": {
+    "Ref": "CascadePreventionUserPool311240B3"
+   }
+  },
+  "CascadePreventionUserPoolClientId": {
+   "Value": {
+    "Ref": "CascadePreventionUserPoolClientE5576613"
+   }
+  },
+  "CascadeOperatorApiKeyId": {
+   "Value": {
+    "Ref": "CascadePreventionApiCascadeOperatorApiKey236D4D80"
+   }
+  },
+  "CascadePreventionApiUrl": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "CascadePreventionApiC1B264F4"
+      },
+      ".execute-api.us-east-1.",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "CascadePreventionApiDeploymentStagev1C2FEFAF6"
+      },
+      "/"
+     ]
+    ]
+   }
+  }
+ },
+ "Mappings": {
+  "AWSCloudFrontPartitionHostedZoneIdMap": {
+   "aws": {
+    "zoneId": "Z2FDTNDATAQYW2"
+   },
+   "aws-cn": {
+    "zoneId": "Z3RFFRIM2A3IF5"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

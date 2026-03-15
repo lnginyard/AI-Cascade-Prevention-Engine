@@ -110,9 +110,9 @@ It doesn't wait for an incident. It prevents one.
 
 | Resource | URL |
 |---|---|
-| GitHub Repository | https://github.com/[your-username]/AI-Cascade-Prevention-Engine |
-| Demo UI (live) | https://[your-domain-or-s3-url] |
-| Blog Article | https://[community.aws or dev.to link] |
+| GitHub Repository | https://github.com/lnginyard/AI-Cascade-Prevention-Engine |
+| Demo UI (live) | https://aicpe.dev |
+| Blog Article | https://article.aicpe.dev |
 | AWS Community Submission | https://community.aws/[submission-url] |
 | LinkedIn Post | [post URL after publishing] |
 | Twitter/X Post | [tweet URL after publishing] |
@@ -126,7 +126,7 @@ It doesn't wait for an incident. It prevents one.
 npm run build && npm test -- --runInBand
 
 # 2. Deploy to your account
-npm run free-tier:start -- cascade-free-tier us-east-1 10 your-email@example.com
+npm run free-tier:start -- cascade-free-tier us-east-1 10 lnginyard@gmail.com
 
 # 3. Check everything is live
 npm run free-tier:status -- cascade-free-tier us-east-1

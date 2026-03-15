@@ -59,6 +59,30 @@ Or using CDK directly:
 cdk deploy
 ```
 
+### Static Site Domains
+
+The stack can publish both the operator UI and a separate article site through CloudFront.
+
+Example:
+
+```bash
+cdk deploy \
+  --context uiDomainName=aicpe.dev \
+  --context uiHostedZoneDomain=aicpe.dev \
+  --context articleDomainName=article.aicpe.dev \
+  --context articleHostedZoneDomain=aicpe.dev
+```
+
+What this configures:
+
+- Private S3 bucket for the UI, deployed from `ui/`
+- Private S3 bucket for the article, deployed from `article/`
+- One CloudFront distribution per site
+- ACM certificates in `us-east-1`
+- Route53 A and AAAA alias records for each custom domain
+
+If you omit these context values, CDK still deploys both static sites and returns their CloudFront URLs as stack outputs.
+
 ### Configuration Options
 
 You can customize the deployment using CDK context parameters:

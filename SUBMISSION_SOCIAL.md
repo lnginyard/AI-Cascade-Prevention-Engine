@@ -36,7 +36,7 @@ Here's what it does:
 
 **The coolest part?** It deploys in one command and runs within AWS Free Tier:
 
-```
+```bash
 npm run free-tier:start -- cascade-free-tier us-east-1 10 your@email.com
 ```
 
@@ -44,7 +44,7 @@ npm run free-tier:start -- cascade-free-tier us-east-1 10 your@email.com
 
 If you're an SRE, platform engineer, or cloud architect who's seen post-mortems that say "the signal was there, we just didn't act fast enough" — this is for you.
 
-🔗 **GitHub:** https://github.com/[your-username]/AI-Cascade-Prevention-Engine
+🔗 **GitHub:** [https://github.com/lnginyard/AI-Cascade-Prevention-Engine](https://github.com/lnginyard/AI-Cascade-Prevention-Engine)
 📝 **Full article:** [blog link]
 🗳️ **AWS Community vote:** [community.aws submission link]
 
@@ -52,7 +52,7 @@ Would love a ⭐ on GitHub or a vote if this resonates with you — no AWS accou
 
 ---
 
-#AWS #CloudEngineering #SRE #Serverless #ResilienceEngineering #DevOps #AWSCommunity #CloudArchitecture #MLOps #PlatformEngineering
+Hashtags: #AWS #CloudEngineering #SRE #Serverless #ResilienceEngineering #DevOps #AWSCommunity #CloudArchitecture #MLOps #PlatformEngineering
 
 ---
 
@@ -89,8 +89,8 @@ Lambda · EventBridge · Step Functions · DynamoDB · API Gateway · Cognito ·
 
 One command deploys the full stack. Runs within AWS Free Tier.
 
-```
-npm run free-tier:start -- cascade-free-tier us-east-1 10 you@email.com
+```bash
+npm run free-tier:start -- cascade-free-tier us-east-1 10 lnginyard@gmail.com
 ```
 
 ---
@@ -100,7 +100,7 @@ Full article 👇
 [blog link]
 
 GitHub (⭐ welcome, no AWS account needed):
-https://github.com/[your-username]/AI-Cascade-Prevention-Engine
+[https://github.com/lnginyard/AI-Cascade-Prevention-Engine](https://github.com/lnginyard/AI-Cascade-Prevention-Engine)
 
 AWS Community vote 🗳️ (free community account, not AWS account):
 [community.aws link]
@@ -112,7 +112,7 @@ If you've lived through a cascade failure and wished something had caught it ear
 
 This is for you.
 
-#AWS #SRE #Serverless #ResilienceEngineering #CloudArchitecture #DevOps #AWSCommunity
+Hashtags: #AWS #SRE #Serverless #ResilienceEngineering #CloudArchitecture #DevOps #AWSCommunity
 
 ---
 
@@ -136,6 +136,7 @@ The AWS Community Builders / community.aws platform **requires a free community 
 → Reserve the community.aws vote ask for your existing technical network who are likely already community members
 
 **Sequence for maximum reach:**
+
 1. Post LinkedIn → get 24 hours of organic reach
 2. Post Twitter/X → link back to LinkedIn post
 3. Share in relevant Slack/Discord communities (AWS Community, SRE Slack, Platform Engineering groups)

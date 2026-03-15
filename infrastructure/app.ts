@@ -1,14 +1,21 @@
 import * as cdk from 'aws-cdk-lib';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import { CfnInclude } from 'aws-cdk-lib/cloudformation-include';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as sns from 'aws-cdk-lib/aws-sns';
+import * as snsSubscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
 import * as sfnTasks from 'aws-cdk-lib/aws-stepfunctions-tasks';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
@@ -16,13 +23,182 @@ import * as path from 'path';
 import { PlaybookMappings } from '../lib/playbook-mappings-construct';
 
 const app = new cdk.App({ analyticsReporting: false });
-const stack = new cdk.Stack(app, 'CascadePreventionStack');
+const cdkAccount = process.env.CDK_DEFAULT_ACCOUNT;
+const cdkRegion = process.env.CDK_DEFAULT_REGION;
+const stack = new cdk.Stack(app, 'CascadePreventionStack', cdkAccount && cdkRegion
+	? { env: { account: cdkAccount, region: cdkRegion } }
+	: undefined);
+
+function parseCsvContext(value: string | undefined): string[] {
+	if (!value) return [];
+	return value
+		.split(',')
+		.map((item) => item.trim())
+		.filter((item) => item.length > 0);
+}
+
 const configuredWebhookUrl = app.node.tryGetContext('webhookUrl') as string | undefined;
+const configuredSlackWebhookUrl = app.node.tryGetContext('slackWebhookUrl') as string | undefined;
+const configuredTeamsWebhookUrl = app.node.tryGetContext('teamsWebhookUrl') as string | undefined;
+const configuredStatuspageWebhookUrl = app.node.tryGetContext('statuspageWebhookUrl') as string | undefined;
+const configuredExecutiveEmails = parseCsvContext(app.node.tryGetContext('executiveEmails') as string | undefined);
+const configuredStakeholderEmails = parseCsvContext(app.node.tryGetContext('stakeholderEmails') as string | undefined);
+const configuredStakeholderSms = parseCsvContext(app.node.tryGetContext('stakeholderSms') as string | undefined);
 const webhookUrl = configuredWebhookUrl ?? '';
-const webhookEnabled = configuredWebhookUrl ? 'true' : 'false';
+const slackWebhookUrl = configuredSlackWebhookUrl ?? '';
+const teamsWebhookUrl = configuredTeamsWebhookUrl ?? '';
+const statuspageWebhookUrl = configuredStatuspageWebhookUrl ?? '';
+const webhookEnabled = (configuredWebhookUrl || configuredSlackWebhookUrl || configuredTeamsWebhookUrl || configuredStatuspageWebhookUrl) ? 'true' : 'false';
+const contextUiDomainName = app.node.tryGetContext('uiDomainName') as string | undefined;
+const contextUiHostedZoneDomain = app.node.tryGetContext('uiHostedZoneDomain') as string | undefined;
+const contextArticleDomainName = app.node.tryGetContext('articleDomainName') as string | undefined;
+const contextArticleHostedZoneDomain = app.node.tryGetContext('articleHostedZoneDomain') as string | undefined;
+const canUseCustomDomains = Boolean(cdkAccount && cdkRegion);
+
+if (!canUseCustomDomains && (contextUiDomainName || contextArticleDomainName)) {
+	console.warn('Custom domain context detected, but CDK_DEFAULT_ACCOUNT/CDK_DEFAULT_REGION are not set. Falling back to CloudFront domains for synth.');
+}
+
+const uiDomainName = canUseCustomDomains ? contextUiDomainName : undefined;
+const uiHostedZoneDomain = canUseCustomDomains ? contextUiHostedZoneDomain : undefined;
+const articleDomainName = canUseCustomDomains ? contextArticleDomainName : undefined;
+const articleHostedZoneDomain = canUseCustomDomains ? contextArticleHostedZoneDomain : undefined;
+
+type StaticSiteConfig = {
+	id: string;
+	assetPath: string;
+	domainName?: string;
+	hostedZoneDomain?: string;
+	spa: boolean;
+	description: string;
+};
+
+function resolveRecordName(domainName: string, zoneName: string): string | undefined {
+	if (domainName === zoneName) {
+		return undefined;
+	}
+
+	const suffix = `.${zoneName}`;
+	if (domainName.endsWith(suffix)) {
+		return domainName.slice(0, -suffix.length);
+	}
+
+	return domainName;
+}
+
+function createStaticSite(config: StaticSiteConfig) {
+	const websiteBucket = new s3.Bucket(stack, `${config.id}Bucket`, {
+		encryption: s3.BucketEncryption.S3_MANAGED,
+		blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+		enforceSSL: true,
+		autoDeleteObjects: false,
+		removalPolicy: cdk.RemovalPolicy.RETAIN,
+	});
+
+	let hostedZone: route53.IHostedZone | undefined;
+	let certificate: acm.ICertificate | undefined;
+
+	if (config.domainName && config.hostedZoneDomain) {
+		hostedZone = route53.HostedZone.fromLookup(stack, `${config.id}HostedZone`, {
+			domainName: config.hostedZoneDomain,
+		});
+
+		certificate = new acm.DnsValidatedCertificate(stack, `${config.id}Certificate`, {
+			domainName: config.domainName,
+			hostedZone,
+			region: 'us-east-1',
+		});
+	}
+
+	const distribution = new cloudfront.Distribution(stack, `${config.id}Distribution`, {
+		certificate,
+		domainNames: config.domainName ? [config.domainName] : undefined,
+		defaultRootObject: 'index.html',
+		defaultBehavior: {
+			origin: origins.S3BucketOrigin.withOriginAccessControl(websiteBucket),
+			viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+			compress: true,
+		},
+		errorResponses: config.spa
+			? [
+				{
+					httpStatus: 403,
+					responseHttpStatus: 200,
+					responsePagePath: '/index.html',
+					ttl: cdk.Duration.minutes(5),
+				},
+				{
+					httpStatus: 404,
+					responseHttpStatus: 200,
+					responsePagePath: '/index.html',
+					ttl: cdk.Duration.minutes(5),
+				},
+			]
+			: undefined,
+		comment: config.description,
+	});
+
+	new s3deploy.BucketDeployment(stack, `${config.id}Deployment`, {
+		destinationBucket: websiteBucket,
+		distribution,
+		distributionPaths: ['/*'],
+		sources: [s3deploy.Source.asset(config.assetPath)],
+	});
+
+	if (hostedZone && config.domainName) {
+		const recordName = resolveRecordName(config.domainName, hostedZone.zoneName);
+
+		new route53.ARecord(stack, `${config.id}AliasRecord`, {
+			zone: hostedZone,
+			recordName,
+			target: route53.RecordTarget.fromAlias(new route53Targets.CloudFrontTarget(distribution)),
+		});
+
+		new route53.AaaaRecord(stack, `${config.id}AliasRecordIpv6`, {
+			zone: hostedZone,
+			recordName,
+			target: route53.RecordTarget.fromAlias(new route53Targets.CloudFrontTarget(distribution)),
+		});
+	}
+
+	new cdk.CfnOutput(stack, `${config.id}BucketName`, {
+		value: websiteBucket.bucketName,
+	});
+
+	new cdk.CfnOutput(stack, `${config.id}CloudFrontDomain`, {
+		value: distribution.distributionDomainName,
+	});
+
+	new cdk.CfnOutput(stack, `${config.id}Url`, {
+		value: config.domainName ? `https://${config.domainName}` : `https://${distribution.distributionDomainName}`,
+	});
+
+	return {
+		bucket: websiteBucket,
+		distribution,
+	};
+}
 
 const included = new CfnInclude(stack, 'CascadePreventionTemplate', {
 	templateFile: 'cfn-template.yaml',
+});
+
+createStaticSite({
+	id: 'OperationsConsole',
+	assetPath: path.join(__dirname, '../ui'),
+	domainName: uiDomainName,
+	hostedZoneDomain: uiHostedZoneDomain,
+	spa: true,
+	description: 'Cascade Prevention Engine operations console',
+});
+
+createStaticSite({
+	id: 'ArticleSite',
+	assetPath: path.join(__dirname, '../article'),
+	domainName: articleDomainName,
+	hostedZoneDomain: articleHostedZoneDomain,
+	spa: false,
+	description: 'Cascade Prevention Engine article site',
 });
 
 const playbookMappings = new PlaybookMappings(stack, 'PlaybookMappings', {
@@ -50,6 +226,15 @@ const remediationPlansTable = new dynamodb.Table(stack, 'RemediationPlansTable',
 const cascadeAlertsTopic = new sns.Topic(stack, 'CascadeAlertsTopic', {
 	displayName: 'Cascade Prevention Alerts',
 });
+
+const notificationEmails = [...new Set([...configuredExecutiveEmails, ...configuredStakeholderEmails])];
+for (const email of notificationEmails) {
+	cascadeAlertsTopic.addSubscription(new snsSubscriptions.EmailSubscription(email));
+}
+
+for (const smsNumber of configuredStakeholderSms) {
+	cascadeAlertsTopic.addSubscription(new snsSubscriptions.SmsSubscription(smsNumber));
+}
 
 const telemetryIngestFunction = new NodejsFunction(stack, 'TelemetryIngestFunction', {
 	runtime: lambda.Runtime.NODEJS_18_X,
@@ -146,6 +331,9 @@ const webhookNotifierFunction = new NodejsFunction(stack, 'WebhookNotifierFuncti
 	memorySize: 256,
 	environment: {
 		WEBHOOK_URL: webhookUrl,
+		SLACK_WEBHOOK_URL: slackWebhookUrl,
+		TEAMS_WEBHOOK_URL: teamsWebhookUrl,
+		STATUSPAGE_WEBHOOK_URL: statuspageWebhookUrl,
 		WEBHOOK_ENABLED: webhookEnabled,
 	},
 });
@@ -383,4 +571,8 @@ new cdk.CfnOutput(stack, 'CascadePreventionUserPoolClientId', {
 
 new cdk.CfnOutput(stack, 'CascadeOperatorApiKeyId', {
 	value: apiKey.keyId,
+});
+
+new cdk.CfnOutput(stack, 'CascadePreventionApiUrl', {
+	value: api.url,
 });

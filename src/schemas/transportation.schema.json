@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TransportationTelemetry",
+  "description": "Fleet, logistics network, and mobility metrics",
+  "type": "object",
+  "properties": {
+    "source": { "const": "transportation" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "networkNodeId": { "type": "string" },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "fleetAvailabilityPct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "fuelCostIndexPctOfNorm": { "type": "number", "minimum": 0, "maximum": 200 },
+        "avgTransitTimePctOfNorm": { "type": "number", "minimum": 0, "maximum": 200 },
+        "routeDisruptionsPct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "lastMileCapacityPct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "carrierPartnersAvailable": { "type": "integer", "minimum": 0 },
+        "delayedShipmentsCount": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["fleetAvailabilityPct"]
+    }
+  },
+  "required": ["source", "timestamp", "networkNodeId", "metrics"]
+}

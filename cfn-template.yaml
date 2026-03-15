@@ -446,9 +446,16 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        S3Bucket:
-          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-us-east-1
-        S3Key: dd0fd4b30a18fa19ccea423a3de3e247d225591d746e9922bde143330dc711be.zip
+        ZipFile: |
+          exports.handler = async function(event) {
+            return {
+              statusCode: 200,
+              body: JSON.stringify({
+                message: 'Model deployer placeholder executed',
+                received: event || null
+              })
+            };
+          };
       Environment:
         Variables:
           MODEL_REGISTRY_TABLE:
@@ -603,9 +610,16 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        S3Bucket:
-          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-us-east-1
-        S3Key: 078bb210b1613ad2d5b02ee6e59fe4ab283360f37eb9b258c5388b7d66a23395.zip
+        ZipFile: |
+          exports.handler = async function(event) {
+            return {
+              statusCode: 200,
+              body: JSON.stringify({
+                message: 'Signature matcher placeholder executed',
+                received: event || null
+              })
+            };
+          };
       Environment:
         Variables:
           MODEL_REGISTRY_TABLE:

@@ -47,7 +47,7 @@ All of this runs on AWS serverless infrastructure. No agents. No servers. One CD
 
 The entire engine is event-driven, built on AWS managed services:
 
-```
+```text
 Telemetry Sources (CloudWatch · X-Ray · CloudTrail · Custom)
         ↓
 Telemetry Ingestion Lambda  →  S3 (365-day archive)  →  DynamoDB (cache)
@@ -68,7 +68,7 @@ Every stage emits structured events to EventBridge, making the control loop trac
 ### AWS Services Used
 
 | Service | What It Does in the Engine |
-|---|---|
+| --- | --- |
 | **Lambda** | Telemetry processing, signature detection, remediation planning, action execution |
 | **API Gateway + Cognito** | Authenticated REST API for operators and the dashboard |
 | **DynamoDB** | Dependency graph, signatures, plans, telemetry cache — all with encryption and PITR |
@@ -126,6 +126,7 @@ function detectCascadeSignature(telemetry: TelemetryEvent[]): CascadeSignature |
 ```
 
 When a signature fires:
+
 - It's persisted to DynamoDB with a confidence score
 - A high-confidence alert fires via SNS
 - The remediation planner generates a plan within 10 seconds
@@ -142,6 +143,7 @@ npm run free-tier:start -- cascade-free-tier us-east-1 10 your@email.com
 ```
 
 That single command:
+
 1. Verifies your AWS profile is authenticated
 2. Bootstraps CDK in us-east-1
 3. Creates billing guardrails ($10/month cap + email alerts)
@@ -166,9 +168,9 @@ The working MVP today is best described as **detect → assess → mitigate**, w
 
 ## Try It / Support the Project
 
-**GitHub:** https://github.com/[your-username]/AI-Cascade-Prevention-Engine
+**GitHub:** [https://github.com/lnginyard/AI-Cascade-Prevention-Engine](https://github.com/lnginyard/AI-Cascade-Prevention-Engine)
 
-If this project resonates with you — if you've lived through a cascade failure and wished something had caught it earlier — I'd love your support:
+If this project resonates with you — if you've experienced and havelived through cascading failures and wished something had caught it earlier — I'd love your support:
 
 - ⭐ **Star the repo** on GitHub
 - 👍 **Vote on AWS Community Builders** — [submission link]

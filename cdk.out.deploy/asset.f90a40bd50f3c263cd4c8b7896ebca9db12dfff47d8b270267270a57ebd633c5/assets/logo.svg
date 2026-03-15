@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <filter id="glow-c" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="2.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-hard" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="neonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#39FF14"/>
+      <stop offset="100%" stop-color="#1DB800"/>
+    </linearGradient>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF2D4A"/>
+      <stop offset="100%" stop-color="#CC0020"/>
+    </linearGradient>
+    <linearGradient id="ghostGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#39FF14" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#39FF14" stop-opacity="0.05"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="60" cy="60" r="58" fill="#030C18" stroke="#071E38" stroke-width="1.5"/>
+
+  <line x1="60" y1="72" x2="76" y2="90" stroke="url(#ghostGrad)" stroke-width="1" stroke-dasharray="3,3"/>
+  <line x1="76" y1="90" x2="60" y2="104" stroke="url(#ghostGrad)" stroke-width="1" stroke-dasharray="3,3"/>
+  <circle cx="76" cy="90" r="5.5" fill="none" stroke="#39FF14" stroke-width="1" opacity="0.22"/>
+  <circle cx="60" cy="104" r="4" fill="none" stroke="#39FF14" stroke-width="1" opacity="0.12"/>
+
+  <line x1="44" y1="26" x2="76" y2="44" stroke="url(#neonGrad)" stroke-width="1.8" filter="url(#glow-c)" opacity="0.9"/>
+  <line x1="76" y1="44" x2="44" y2="62" stroke="url(#neonGrad)" stroke-width="1.8" filter="url(#glow-c)" opacity="0.9"/>
+  <line x1="44" y1="62" x2="60" y2="72" stroke="#39FF14" stroke-width="1.5" opacity="0.45"/>
+
+  <circle cx="44" cy="26" r="7" fill="#071428" stroke="url(#neonGrad)" stroke-width="2" filter="url(#glow-c)"/>
+  <circle cx="44" cy="26" r="3" fill="url(#neonGrad)" filter="url(#glow-c)"/>
+
+  <circle cx="76" cy="44" r="7" fill="#071428" stroke="url(#neonGrad)" stroke-width="2" filter="url(#glow-c)"/>
+  <circle cx="76" cy="44" r="3" fill="url(#neonGrad)" filter="url(#glow-c)"/>
+
+  <circle cx="44" cy="62" r="7" fill="#071428" stroke="url(#neonGrad)" stroke-width="2" filter="url(#glow-c)"/>
+  <circle cx="44" cy="62" r="3" fill="url(#neonGrad)" filter="url(#glow-c)"/>
+
+  <line x1="22" y1="82" x2="98" y2="58" stroke="#39FF14" stroke-width="8" stroke-linecap="round" opacity="0.07" filter="url(#glow-hard)"/>
+  <line x1="22" y1="82" x2="98" y2="58" stroke="#39FF14" stroke-width="4" stroke-linecap="round" opacity="0.2" filter="url(#glow-c)"/>
+  <line x1="22" y1="82" x2="98" y2="58" stroke="url(#neonGrad)" stroke-width="2.5" stroke-linecap="round" filter="url(#glow-c)"/>
+
+  <circle cx="60" cy="70" r="5" fill="#030C18" stroke="url(#neonGrad)" stroke-width="2" filter="url(#glow-hard)"/>
+  <circle cx="60" cy="70" r="2.5" fill="#39FF14" filter="url(#glow-hard)"/>
+
+  <line x1="34" y1="78.2" x2="36" y2="72.5" stroke="#39FF14" stroke-width="1.2" opacity="0.5"/>
+  <line x1="82" y1="62.8" x2="84" y2="57.1" stroke="#39FF14" stroke-width="1.2" opacity="0.5"/>
+</svg>

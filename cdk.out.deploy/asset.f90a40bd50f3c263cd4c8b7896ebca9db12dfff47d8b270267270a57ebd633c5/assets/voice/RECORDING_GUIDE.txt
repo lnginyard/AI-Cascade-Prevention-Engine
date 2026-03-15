@@ -1,0 +1,85 @@
+VOICE RECORDING GUIDE — Cascade Prevention Engine Demo
+=======================================================
+
+Drop your personal MP3 recordings into this folder.
+File names must match exactly. The app automatically uses
+your recordings instead of the browser's TTS voice.
+
+Recommended recording tips:
+  - Use your phone's Voice Memo app (exports M4A → rename to .mp3)
+    OR use QuickTime > File > New Audio Recording on Mac.
+  - Quiet room, normal speaking pace.
+  - Say the line naturally, then trim silence from start/end.
+  - Export / save as MP3 (or rename .m4a → .mp3 — modern browsers
+    play both, just name the file with .mp3 extension).
+
+─────────────────────────────────────────────────────────
+FILE: test.mp3
+LINE: "Cascade Prevention Engine is online. Predict the
+       cascade, cut the blast radius, and keep customers
+       protected."
+(Played when you click the Test Voice button)
+
+─────────────────────────────────────────────────────────
+FILE: step1.mp3
+LINE (2-min cut): "Here, Cascade Prevention Engine is
+       modeling a queue saturation scenario with
+       company-wide safeguards enabled from the start."
+
+─────────────────────────────────────────────────────────
+FILE: step2.mp3
+LINE: "Instead of waiting for failure, the platform
+       forecasts service impact early and estimates the
+       likely blast radius in advance."
+
+─────────────────────────────────────────────────────────
+FILE: step3.mp3
+LINE: "This dependency graph highlights the exact service
+       relationships carrying risk, making the cascade
+       path immediately visible to operators."
+
+─────────────────────────────────────────────────────────
+FILE: globe.mp3
+LINE: "On the interactive globe, the platform shows where
+       the cascade is spreading and which regions are
+       moving into higher severity."
+
+─────────────────────────────────────────────────────────
+FILE: flat.mp3
+LINE: "For regional operations teams, the flat map
+       provides a more tactical view with translucent
+       overlays and guided route visibility."
+
+─────────────────────────────────────────────────────────
+FILE: list.mp3
+LINE: "The region list turns that same intelligence into
+       an executive summary of affected areas, exposure
+       level, and mitigation priority."
+
+─────────────────────────────────────────────────────────
+FILE: step5.mp3
+LINE: "Using that forecast, the system assembles an
+       AI-guided remediation plan designed to reduce
+       propagation before customer harm occurs."
+
+─────────────────────────────────────────────────────────
+FILE: step6.mp3
+LINE: "Once approved, mitigation controls are executed to
+       suppress retry amplification, stabilize
+       dependencies, and shrink the blast radius."
+
+─────────────────────────────────────────────────────────
+FILE: step7.mp3
+LINE: "The event is contained, the environment returns to
+       a guarded state, and business continuity is
+       preserved without visible customer impact."
+
+─────────────────────────────────────────────────────────
+NOTES:
+  - You can add just the files you have. Missing files fall
+    back to the browser TTS voice automatically.
+  - The 90-second cut uses the same keys — record one set,
+    both presets will use your voice.
+  - If you use a service like ElevenLabs or Resemble.ai to
+    clone your voice, generate each line as an MP3 and
+    drop it here with the same filenames.

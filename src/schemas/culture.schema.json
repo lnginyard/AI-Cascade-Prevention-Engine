@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CultureTelemetry",
+  "description": "Organizational health, engagement, and culture metrics",
+  "type": "object",
+  "properties": {
+    "source": { "const": "culture" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "organizationalUnitId": { "type": "string" },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "engagementScore": { "type": "number", "minimum": 0, "maximum": 100 },
+        "psychologicalSafetyScore": { "type": "number", "minimum": 0, "maximum": 100 },
+        "retentionAtRiskPct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "communicationEffectiveness": { "type": "number", "minimum": 0, "maximum": 100 },
+        "trustInLeadership": { "type": "number", "minimum": 0, "maximum": 100 },
+        "knowledgeSharingIndex": { "type": "number", "minimum": 0, "maximum": 100 }
+      },
+      "required": ["engagementScore"]
+    }
+  },
+  "required": ["source", "timestamp", "organizationalUnitId", "metrics"]
+}

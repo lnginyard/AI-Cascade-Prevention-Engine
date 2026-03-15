@@ -101,6 +101,7 @@ const scenarioLibrary = {
 };
 
 let dependencyNodes = cloneNodes();
+let runtimeDependencyEdges = [...dependencyEdges];
 let signatures = [...baselineSignatures];
 let remediationPlans = [...baselinePlans];
 let selectedPlan = null;
@@ -109,60 +110,44 @@ let graphDetail = null;
 let flatMap = null;
 let previewMap = null;
 let globeView = null;
+let techGlobeCanvas = null;
+let techGlobeAnimationId = null;
+let techGlobeRotation = 0;
 let flatTileLayer = null;
 let previewTileLayer = null;
+let flatVideoOverlay = null;
+let previewVideoOverlay = null;
 let flatLayers = [];
 let previewLayers = [];
 let currentMapView = 'globe';
 let narrationEnabled = true;
 let narrationRate = 1;
-let selectedDemoPreset = 'extended';
+let selectedDemoPreset = 'full';
 let narrationVoices = [];
 let selectedNarrationVoice = null;
 let narrationPrimed = false;
 let narrationSupportKnown = false;
+let activeNarrationAudio = null;
+let narrationSessionId = 0;
+let demoRunning = false;
+let liveRefreshTimer = null;
+const LIVE_REFRESH_INTERVAL_MS = 15000;
+let mapRoutePhase = 0;
+let mapAnimationTimer = null;
+let simulationShockUntil = 0;
+
+// AI Chat State
+let chatSessionId = null;
+let chatMessages = [];
+let chatLoading = false;
+const CHAT_API_PATH = '/ai-copilot/chat';
 
 const demoPresets = {
-  short: {
-    label: '90-second cut',
+  full: {
+    label: 'Full voiceover',
     timings: {
-      intro: 700,
-      preSimulate: 550,
-      graphHold: 1800,
-      globeHold: 1400,
-      flatHold: 1300,
-      listHold: 1200,
-      remediationHold: 1700,
-      approvalLead: 1100,
-      approvalCommit: 500,
-      overviewHold: 2600,
-    },
-    script: {
-      step1: 'Cascade Prevention Engine is now modeling a queue saturation event with company-wide protection enabled.',
-      step2: 'The simulator projects the blast radius before customers are affected, giving operators time to act.',
-      step3: 'The dependency graph reveals how pressure propagates across critical services and where intervention matters most.',
-      globe: 'On the globe, we can see regional exposure building in real time as the cascade expands.',
-      flat: 'The flat map converts that same signal into a tactical view for rapid operational coordination.',
-      list: 'The region list summarizes affected areas in priority order so teams can respond with speed and clarity.',
-      step5: 'Based on that forecast, the platform prepares a mitigation plan aligned to the current risk profile.',
-      step6: 'With one approval, the recommended controls are applied automatically to contain the event.',
-      step7: 'The cascade is contained, resilience posture is restored, and customer impact is avoided.',
-    },
-    voiceRate: 1.14,
-  },
-  extended: {
-    label: '2-minute cut',
-    timings: {
-      intro: 1000,
-      preSimulate: 900,
-      graphHold: 2800,
-      globeHold: 2200,
-      flatHold: 1900,
-      listHold: 1800,
-      remediationHold: 2600,
-      approvalLead: 1800,
-      approvalCommit: 700,
-      overviewHold: 4200,
+      transition: 220,
+      overviewHold: 1200,
     },
     script: {
       step1: 'Here, Cascade Prevention Engine is modeling a queue saturation scenario with company-wide safeguards enabled from the start.',
@@ -175,7 +160,6 @@ const demoPresets = {
       step6: 'Once approved, mitigation controls are executed to suppress retry amplification, stabilize dependencies, and shrink the blast radius.',
       step7: 'The event is contained, the environment returns to a guarded state, and business continuity is preserved without visible customer impact.',
     },
-    voiceRate: 1,
   },
 };
 
@@ -205,29 +189,96 @@ function getSeverityLabel(health) {
 
 function initializePreferences() {
   const savedTheme = localStorage.getItem('cascade-theme') || 'dark';
+  const savedTextSize = localStorage.getItem('cascade-text-size') || 'normal';
+  const savedContrast = localStorage.getItem('cascade-contrast') || 'standard';
   const savedMotion = localStorage.getItem('cascade-motion') || 'normal';
   const savedVoice = localStorage.getItem('cascade-voiceover') || 'on';
   const savedRate = localStorage.getItem('cascade-voice-rate') || '1';
-  const savedDemoPreset = localStorage.getItem('cascade-demo-preset') || 'extended';
+  const savedDemoPreset = localStorage.getItem('cascade-demo-preset') || 'full';
 
   const themeSelector = document.getElementById('themeSelector');
+  const textSizeSelector = document.getElementById('textSizeSelector');
+  const contrastSelector = document.getElementById('contrastSelector');
   const motionToggle = document.getElementById('motionToggle');
   const voiceoverToggle = document.getElementById('voiceoverToggle');
   const voiceRate = document.getElementById('voiceRate');
   const demoPresetSelector = document.getElementById('demoPresetSelector');
+  const apiBaseUrl = document.getElementById('apiBaseUrl');
+  const apiKey = document.getElementById('apiKey');
+  const bearerToken = document.getElementById('bearerToken');
+
+  const defaultApiBaseUrl = `${window.location.origin}/v1`;
+  const savedApiBaseUrl = localStorage.getItem('cascade-live-api-base-url') || defaultApiBaseUrl;
+  const savedApiKey = localStorage.getItem('cascade-live-api-key') || '';
+  const savedBearerToken = localStorage.getItem('cascade-live-bearer-token') || '';
 
   if (themeSelector) themeSelector.value = savedTheme;
+  if (textSizeSelector) textSizeSelector.value = savedTextSize;
+  if (contrastSelector) contrastSelector.value = savedContrast;
   if (motionToggle) motionToggle.value = savedMotion;
   if (voiceoverToggle) voiceoverToggle.value = savedVoice;
   if (voiceRate) voiceRate.value = savedRate;
   if (demoPresetSelector) demoPresetSelector.value = savedDemoPreset;
+  if (apiBaseUrl) apiBaseUrl.value = savedApiBaseUrl;
+  if (apiKey) apiKey.value = savedApiKey;
+  if (bearerToken) bearerToken.value = savedBearerToken;
 
   applyTheme(savedTheme);
+  applyTextSizeSetting(savedTextSize);
+  applyContrastSetting(savedContrast);
   applyMotionSetting(savedMotion);
   narrationEnabled = savedVoice === 'on';
-  selectedDemoPreset = demoPresets[savedDemoPreset] ? savedDemoPreset : 'extended';
+  selectedDemoPreset = demoPresets[savedDemoPreset] ? savedDemoPreset : 'full';
   narrationRate = Number(savedRate);
   updateVoiceStatus(narrationEnabled ? 'Voice initializing…' : 'Voiceover is turned off.', narrationEnabled ? '' : 'error');
+}
+
+function getLiveApiBaseUrl() {
+  const apiBaseUrlInput = document.getElementById('apiBaseUrl');
+  const typedValue = apiBaseUrlInput?.value?.trim();
+  const storedValue = localStorage.getItem('cascade-live-api-base-url') || '';
+  const fallbackValue = `${window.location.origin}/v1`;
+  const resolved = typedValue || storedValue || fallbackValue;
+
+  if (apiBaseUrlInput && !typedValue) {
+    apiBaseUrlInput.value = resolved;
+  }
+
+  if (!storedValue || storedValue !== resolved) {
+    localStorage.setItem('cascade-live-api-base-url', resolved);
+  }
+
+  return resolved;
+}
+
+function persistLiveConfig() {
+  const apiBaseUrl = document.getElementById('apiBaseUrl')?.value?.trim() || '';
+  const apiKey = document.getElementById('apiKey')?.value?.trim() || '';
+  const bearerToken = document.getElementById('bearerToken')?.value?.trim() || '';
+
+  localStorage.setItem('cascade-live-api-base-url', apiBaseUrl);
+  localStorage.setItem('cascade-live-api-key', apiKey);
+  localStorage.setItem('cascade-live-bearer-token', bearerToken);
+}
+
+function startLiveAutoRefresh() {
+  if (liveRefreshTimer) {
+    clearInterval(liveRefreshTimer);
+  }
+
+  const baseUrl = document.getElementById('apiBaseUrl')?.value?.trim();
+  if (!baseUrl) return;
+
+  liveRefreshTimer = setInterval(() => {
+    fetchLiveData(true);
+  }, LIVE_REFRESH_INTERVAL_MS);
+}
+
+function stopLiveAutoRefresh() {
+  if (liveRefreshTimer) {
+    clearInterval(liveRefreshTimer);
+    liveRefreshTimer = null;
+  }
 }
 
 function getDemoPreset() {
@@ -238,6 +289,18 @@ function applyTheme(theme) {
   const selectedTheme = theme === 'day' ? 'day' : 'dark';
   document.body.setAttribute('data-theme', selectedTheme);
   localStorage.setItem('cascade-theme', selectedTheme);
+}
+
+function applyTextSizeSetting(size) {
+  const selectedSize = ['normal', 'large', 'xlarge'].includes(size) ? size : 'normal';
+  document.body.setAttribute('data-text-size', selectedSize);
+  localStorage.setItem('cascade-text-size', selectedSize);
+}
+
+function applyContrastSetting(mode) {
+  const selectedMode = mode === 'high' ? 'high' : 'standard';
+  document.body.setAttribute('data-contrast', selectedMode);
+  localStorage.setItem('cascade-contrast', selectedMode);
 }
 
 function applyMotionSetting(mode) {
@@ -275,15 +338,19 @@ function cacheNarrationVoices() {
   if (typeof speechSynthesis === 'undefined') {
     narrationSupportKnown = true;
     updateVoiceStatus('Voiceover unavailable in this browser.', 'error');
+    console.warn('Speech Synthesis API not available');
     return [];
   }
 
   const voices = speechSynthesis.getVoices();
+  console.log(`Cached ${voices.length} voice(s)`);
+  
   if (voices.length) {
     narrationVoices = voices;
     selectedNarrationVoice = chooseNarrationVoice(voices);
     narrationSupportKnown = true;
-    updateVoiceStatus(`Voice ready: ${selectedNarrationVoice?.name || 'System default'}`, 'ready');
+    console.log('Selected voice:', selectedNarrationVoice?.name);
+    updateVoiceStatus('Voice ready: Lorenzo', 'ready');
   }
 
   return voices;
@@ -296,6 +363,7 @@ async function ensureNarrationReady() {
     return false;
   }
 
+  // Get voices with timeout
   let voices = cacheNarrationVoices();
   if (!voices.length) {
     voices = await new Promise((resolve) => {
@@ -309,7 +377,7 @@ async function ensureNarrationReady() {
       const timer = setTimeout(() => {
         speechSynthesis.onvoiceschanged = null;
         finish();
-      }, 1200);
+      }, 2000);
 
       speechSynthesis.onvoiceschanged = () => {
         clearTimeout(timer);
@@ -320,59 +388,238 @@ async function ensureNarrationReady() {
   }
 
   if (!voices.length) {
-    updateVoiceStatus('No browser voice is available yet. Open in a full browser if needed.', 'error');
+    updateVoiceStatus('No browser voice available. Try refreshing the page.', 'error');
     return false;
   }
 
+  // Prime the speech synthesis by speaking and canceling a brief utterance
   if (!narrationPrimed) {
     try {
-      speechSynthesis.resume();
-      const primer = new SpeechSynthesisUtterance(' ');
-      primer.volume = 0;
-      primer.rate = 1;
-      primer.pitch = 1;
-      primer.lang = selectedNarrationVoice?.lang || 'en-US';
-      if (selectedNarrationVoice) primer.voice = selectedNarrationVoice;
-      speechSynthesis.speak(primer);
-      speechSynthesis.cancel();
-    } catch {
-      updateVoiceStatus('Voice engine is blocked. Try the Test Voice button.', 'error');
-      return false;
+      // Resume any paused synthesis
+      if (speechSynthesis.paused) {
+        speechSynthesis.resume();
+      }
+
+      // Speak a true-silent utterance to satisfy the browser's user-gesture
+      // requirement and activate the synthesis engine without audible output.
+      await new Promise((resolve) => {
+        const primer = new SpeechSynthesisUtterance('\u200B'); // zero-width space
+        primer.volume = 0;
+        primer.rate = 2;
+        primer.lang = selectedNarrationVoice?.lang || 'en-US';
+        if (selectedNarrationVoice) primer.voice = selectedNarrationVoice;
+        primer.onend = resolve;
+        primer.onerror = resolve; // resolve regardless so we don't hang
+        speechSynthesis.speak(primer);
+        // Safety fallback in case onend never fires
+        setTimeout(resolve, 600);
+      });
+    } catch (e) {
+      console.warn('Voice priming error:', e);
+      // Don't fail — might still be able to speak
     }
+
+    // Prime the HTML Audio API so personal recordings can play after async delays.
+    // Without this, Chrome blocks audio.play() once the user-gesture context expires.
+    try {
+      const audioPrimer = new Audio('./assets/voice/voice/test.mp3');
+      audioPrimer.volume = 0;
+      audioPrimer.preload = 'auto';
+      await new Promise((resolve) => {
+        const t = setTimeout(resolve, 600);
+        audioPrimer.addEventListener('canplay', () => {
+          audioPrimer.play().then(() => {
+            setTimeout(() => {
+              audioPrimer.pause();
+              audioPrimer.currentTime = 0;
+              clearTimeout(t);
+              resolve();
+            }, 100);
+          }).catch(() => { clearTimeout(t); resolve(); });
+        }, { once: true });
+        audioPrimer.onerror = () => { clearTimeout(t); resolve(); };
+        audioPrimer.load();
+      });
+    } catch (e) {
+      console.warn('Audio API priming error:', e);
+    }
+
     narrationPrimed = true;
   }
 
-  updateVoiceStatus(`Voice ready: ${selectedNarrationVoice?.name || 'System default'}`, 'ready');
+  updateVoiceStatus('Voice ready: Lorenzo', 'ready');
   return true;
 }
 
-function speakNarration(text) {
-  if (!narrationEnabled || !text || typeof speechSynthesis === 'undefined') return false;
+// ── Voice engine ─────────────────────────────────────────────────────────────
+// speakNarration is the single public entry point. It is ASYNC and AWAITABLE —
+// callers can `await speakNarration(text, key)` to pause until the line ends.
+//
+// Priority order:
+//   1. If `key` is supplied, try to play ui/assets/voice/<key>.mp3  (your own recording)
+//   2. Fall back to Web Speech API TTS with the best available system voice
 
-  const ready = narrationSupportKnown ? true : cacheNarrationVoices().length > 0;
-  if (!ready) {
-    updateVoiceStatus('Voice still loading. Click Test Voice or rerun the demo.', 'error');
+async function speakNarration(text, key = null) {
+  if (!narrationEnabled || (!text && !key)) return;
+
+  narrationSessionId += 1;
+  const sessionId = narrationSessionId;
+  stopActiveNarration();
+
+  if (key) {
+    const played = await playVoiceFile(key, sessionId);
+    if (played) return;
+    updateVoiceStatus(`Missing personal voice clip: ${key}.mp3`, 'error');
+    return;
   }
 
-  try {
+  updateVoiceStatus('Personal voice mode requires a recording key.', 'error');
+}
+
+function stopActiveNarration() {
+  if (activeNarrationAudio) {
+    activeNarrationAudio.pause();
+    activeNarrationAudio.currentTime = 0;
+    activeNarrationAudio.src = '';
+    activeNarrationAudio = null;
+  }
+  if (typeof speechSynthesis !== 'undefined') {
     speechSynthesis.cancel();
-    speechSynthesis.resume();
-  } catch {
-    updateVoiceStatus('Voice playback could not start in this browser.', 'error');
+  }
+}
+
+// Play a personal recorded voice file. Returns true if it played to completion,
+// false if the file doesn't exist or any error occurs.
+function playVoiceFile(key, sessionId) {
+  const candidates = [
+    `./assets/voice/voice/${key}.mp3`,
+    `./assets/voice/voice/${key}.m4a`,
+    `./assets/voice/${key}.mp3`,
+    `./assets/voice/${key}.m4a`,
+  ];
+
+  const tryPath = (path) =>
+    new Promise((resolve) => {
+      const audio = new Audio(path);
+      audio.preload = 'auto';
+      let settled = false;
+      let started = false;
+      const loadTimer = setTimeout(() => finish(false), 4500);
+
+      const finish = (ok) => {
+        if (!settled) {
+          settled = true;
+          clearTimeout(loadTimer);
+          if (!ok) {
+            audio.pause();
+            audio.currentTime = 0;
+          }
+          resolve(ok);
+        }
+      };
+
+      const startPlayback = () => {
+        if (started || settled || sessionId !== narrationSessionId) {
+          finish(false);
+          return;
+        }
+
+        started = true;
+        clearTimeout(loadTimer);
+        updateVoiceStatus(`Playing your recording: ${key}`, 'speaking');
+        activeNarrationAudio = audio;
+
+        audio.onended = () => {
+          if (sessionId !== narrationSessionId) {
+            finish(false);
+            return;
+          }
+          if (activeNarrationAudio === audio) activeNarrationAudio = null;
+          updateVoiceStatus('Voice ready', 'ready');
+          finish(true);
+        };
+
+        audio
+          .play()
+          .then(() => {})
+          .catch(() => {
+            if (activeNarrationAudio === audio) activeNarrationAudio = null;
+            finish(false);
+          });
+      };
+
+      audio.onerror = () => finish(false);
+      audio.addEventListener('canplay', startPlayback, { once: true });
+
+      audio.load();
+    });
+
+  return (async () => {
+    for (const path of candidates) {
+      const ok = await tryPath(path);
+      if (ok) return true;
+    }
     return false;
+  })();
+}
+
+// Web Speech API TTS — fully awaitable; resolves when the utterance finishes.
+function speakTTS(text, sessionId) {
+  if (typeof speechSynthesis === 'undefined') return Promise.resolve();
+
+  if (!narrationSupportKnown || selectedNarrationVoice === null) {
+    updateVoiceStatus('Voice not ready. Open the sidebar and click Test Voice.', 'error');
+    return Promise.resolve();
   }
 
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = narrationRate;
-  utterance.pitch = 0.92;
-  utterance.volume = 1;
-  utterance.lang = selectedNarrationVoice?.lang || 'en-US';
-  if (selectedNarrationVoice) utterance.voice = selectedNarrationVoice;
-  utterance.onstart = () => updateVoiceStatus(`Speaking with ${selectedNarrationVoice?.name || 'system voice'}…`, 'speaking');
-  utterance.onend = () => updateVoiceStatus(`Voice ready: ${selectedNarrationVoice?.name || 'System default'}`, 'ready');
-  utterance.onerror = () => updateVoiceStatus('Voice playback failed. Use Test Voice to retry.', 'error');
-  speechSynthesis.speak(utterance);
-  return true;
+  return new Promise((resolve) => {
+    const wasPlaying = speechSynthesis.speaking || speechSynthesis.pending;
+    if (wasPlaying) speechSynthesis.cancel();
+
+    const doSpeak = () => {
+      if (sessionId !== narrationSessionId) {
+        resolve();
+        return;
+      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = narrationRate;
+      utterance.pitch = 0.92;
+      utterance.volume = 1;
+      utterance.lang = selectedNarrationVoice?.lang || 'en-US';
+      utterance.voice = selectedNarrationVoice;
+
+      utterance.onstart = () => {
+        console.log('TTS started:', text.substring(0, 60));
+        updateVoiceStatus('Speaking with Lorenzo…', 'speaking');
+      };
+      utterance.onend = () => {
+        updateVoiceStatus('Voice ready: Lorenzo', 'ready');
+        resolve();
+      };
+      utterance.onerror = (event) => {
+        // 'interrupted' / 'canceled' are expected when the demo is skipped — not real errors.
+        if (event.error === 'interrupted' || event.error === 'canceled') { resolve(); return; }
+        console.error('TTS error:', event.error);
+        updateVoiceStatus(`Voice error: ${event.error}. Try Test Voice.`, 'error');
+        resolve(); // always resolve so the demo doesn't hang
+      };
+
+      try {
+        speechSynthesis.speak(utterance);
+      } catch (e) {
+        console.error('speak() threw:', e);
+        resolve();
+      }
+    };
+
+    // On macOS Chrome a back-to-back cancel→speak in the same tick is silently
+    // dropped. A 120 ms gap lets the engine settle.
+    if (wasPlaying) {
+      setTimeout(doSpeak, 120);
+    } else {
+      doSpeak();
+    }
+  });
 }
 
 function healthColor(health) {
@@ -413,14 +660,51 @@ function buildHeaders() {
   return headers;
 }
 
-async function fetchLiveData() {
-  const baseUrl = document.getElementById('apiBaseUrl').value.trim();
+function deriveLiveEdges(items) {
+  const edgeMap = new Map();
+  const nodeIds = new Set(
+    items.map((item, index) => item.serviceId || item.serviceName || `service-${index}`)
+  );
+
+  const pushEdge = (source, target, weight = 0.6) => {
+    if (!source || !target || source === target) return;
+    if (!nodeIds.has(source) || !nodeIds.has(target)) return;
+    const id = `${source}-${target}`;
+    if (!edgeMap.has(id)) {
+      edgeMap.set(id, { source, target, weight: Math.max(0.35, Math.min(1, Number(weight) || 0.6)) });
+    }
+  };
+
+  items.forEach((item, index) => {
+    const source = item.serviceId || item.serviceName || `service-${index}`;
+    const links = [
+      ...(Array.isArray(item.dependencies) ? item.dependencies : []),
+      ...(Array.isArray(item.downstream) ? item.downstream : []),
+      ...(Array.isArray(item.connectedTo) ? item.connectedTo : []),
+    ];
+
+    links.forEach((target) => {
+      if (typeof target === 'string') {
+        pushEdge(source, target, item.dependencyWeight || item.weight || 0.62);
+      } else if (target && typeof target === 'object') {
+        pushEdge(source, target.serviceId || target.serviceName || target.id, target.weight || item.weight || 0.62);
+      }
+    });
+  });
+
+  return [...edgeMap.values()];
+}
+
+async function fetchLiveData(isBackgroundRefresh = false) {
+  const baseUrl = getLiveApiBaseUrl();
   if (!baseUrl) {
     setModeStatus('Mode: Demo data (no base URL configured)');
+    stopLiveAutoRefresh();
     return;
   }
 
   try {
+    if (!isBackgroundRefresh) persistLiveConfig();
     const headers = buildHeaders();
     const [graphRes, signaturesRes, plansRes] = await Promise.all([
       fetch(`${baseUrl}/dependency-graph`, { headers }),
@@ -435,8 +719,9 @@ async function fetchLiveData() {
     const graphPayload = await graphRes.json();
     const signaturesPayload = await signaturesRes.json();
     const plansPayload = await plansRes.json();
+    const graphItems = graphPayload.items || [];
 
-    dependencyNodes = (graphPayload.items || []).map((item, index) => ({
+    dependencyNodes = graphItems.map((item, index) => ({
       id: item.serviceId || item.serviceName || `service-${index}`,
       service: item.serviceName || item.serviceId || `service-${index}`,
       health: item.healthStatus || 'unknown',
@@ -444,6 +729,9 @@ async function fetchLiveData() {
       region: item.region || 'us-east-1',
       role: item.role || 'service',
     }));
+
+    const liveEdges = deriveLiveEdges(graphItems);
+    runtimeDependencyEdges = liveEdges.length ? liveEdges : [...dependencyEdges];
 
     signatures = (signaturesPayload.items || []).map((item) => ({
       name: item.signatureName || item.signatureId || 'unknown-signature',
@@ -461,8 +749,10 @@ async function fetchLiveData() {
 
     selectedPlan = null;
     renderDashboard();
-    setModeStatus('Mode: Live data connected');
+    setModeStatus(`Mode: Live data connected · updated ${new Date().toLocaleTimeString()}`);
+    startLiveAutoRefresh();
   } catch (error) {
+    stopLiveAutoRefresh();
     setModeStatus(`Mode: Demo data (live failed: ${error.message})`);
   }
 }
@@ -621,6 +911,34 @@ function buildScenarioPlan(scenarioKey, scope) {
   };
 }
 
+function startMapAnimationLoop() {
+  if (mapAnimationTimer) return;
+  mapAnimationTimer = setInterval(() => {
+    if (document.body.classList.contains('reduced-motion')) return;
+    mapRoutePhase = (mapRoutePhase + 1) % 1200;
+
+    if (simulationState.active || currentMapView === 'flat' || currentMapView === 'globe') {
+      renderLeafletMap('riskMapPreview');
+      renderLeafletMap('flatMapContainer');
+    }
+  }, 85);
+}
+
+function triggerSimulationVisualBurst(mode = 'surge') {
+  simulationShockUntil = Date.now() + (mode === 'mitigation' ? 1600 : 2200);
+  const globeContainer = document.getElementById('globeContainer');
+  const flatMapContainer = document.getElementById('flatMapContainer');
+  const previewContainer = document.getElementById('riskMapPreview');
+  const cls = mode === 'mitigation' ? 'mitigation-surge' : 'simulation-surge';
+
+  [globeContainer, flatMapContainer, previewContainer].forEach((el) => {
+    if (!el) return;
+    el.classList.remove('simulation-surge', 'mitigation-surge');
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), mode === 'mitigation' ? 1700 : 2400);
+  });
+}
+
 function simulateScenario() {
   const scenarioKey = document.getElementById('scenarioSelector').value;
   const region = document.getElementById('regionSelector').value;
@@ -669,6 +987,7 @@ function simulateScenario() {
 
   addAuditEntry(`Simulated ${scenario.title} in ${region} with ${scope} scope`);
   setModeStatus(`Mode: Demo simulator active (${scenario.title})`);
+  triggerSimulationVisualBurst('surge');
   renderDashboard();
 }
 
@@ -703,6 +1022,7 @@ function applyAiMitigation() {
   ]);
 
   addAuditEntry(`AI mitigation applied for ${scenario.title}`);
+  triggerSimulationVisualBurst('mitigation');
   renderDashboard();
 }
 
@@ -934,28 +1254,108 @@ function clearLayers(layerList) {
   layerList.length = 0;
 }
 
+function ensureWorldFlatVideoOverlay(map, containerId) {
+  if (typeof L === 'undefined') return;
+
+  const bounds = [[-85, -180], [85, 180]];
+  const url = './assets/worldFlat.mp4';
+
+  let overlay = containerId === 'riskMapPreview' ? previewVideoOverlay : flatVideoOverlay;
+  if (overlay) {
+    map.removeLayer(overlay);
+  }
+
+  overlay = L.videoOverlay(url, bounds, {
+    autoplay: true,
+    loop: true,
+    muted: true,
+    interactive: false,
+    opacity: 0.62,
+    className: 'world-flat-video-overlay',
+  }).addTo(map);
+
+  const videoEl = overlay.getElement?.();
+  if (videoEl) {
+    videoEl.muted = true;
+    videoEl.loop = true;
+    videoEl.playsInline = true;
+    videoEl.setAttribute('playsinline', 'true');
+    videoEl.setAttribute('webkit-playsinline', 'true');
+    videoEl.addEventListener('error', () => {
+      // Keep base map visible if the video codec isn't supported in the browser.
+      overlay?.setOpacity?.(0);
+    }, { once: true });
+    const playback = videoEl.play();
+    if (playback?.catch) {
+      playback.catch(() => {
+        overlay?.setOpacity?.(0);
+      });
+    }
+  }
+
+  if (containerId === 'riskMapPreview') {
+    previewVideoOverlay = overlay;
+  } else {
+    flatVideoOverlay = overlay;
+  }
+}
+
+function ensureBaseTileLayer(map, containerId) {
+  if (typeof L === 'undefined') return;
+
+  const existing = containerId === 'riskMapPreview' ? previewTileLayer : flatTileLayer;
+  if (existing) return;
+
+  const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 7,
+    minZoom: 1,
+    opacity: containerId === 'riskMapPreview' ? 0.48 : 0.62,
+    crossOrigin: true,
+  }).addTo(map);
+
+  if (containerId === 'riskMapPreview') {
+    previewTileLayer = tileLayer;
+  } else {
+    flatTileLayer = tileLayer;
+  }
+}
+
 function ensureMap(containerId) {
   if (typeof L === 'undefined') return null;
-
-  const darkTiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-  const lightTiles = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
-  const tileUrl = document.body.getAttribute('data-theme') === 'day' ? lightTiles : darkTiles;
-  const tileOptions = { maxZoom: 6 };
+  const worldBounds = [[-60, -170], [82, 170]];
 
   if (containerId === 'riskMapPreview' && !previewMap) {
-    previewMap = L.map(containerId, { zoomControl: false, attributionControl: false, worldCopyJump: true }).setView([20, 0], 2);
-    previewTileLayer = L.tileLayer(tileUrl, tileOptions).addTo(previewMap);
-  } else if (containerId === 'riskMapPreview' && previewMap && previewTileLayer) {
-    previewMap.removeLayer(previewTileLayer);
-    previewTileLayer = L.tileLayer(tileUrl, tileOptions).addTo(previewMap);
+    previewMap = L.map(containerId, {
+      zoomControl: false,
+      attributionControl: false,
+      worldCopyJump: true,
+      minZoom: 1,
+      maxZoom: 6,
+    }).setView([12, 0], 1.6);
+    previewMap.fitBounds(worldBounds, { padding: [8, 8], animate: false });
+    ensureBaseTileLayer(previewMap, 'riskMapPreview');
+    ensureWorldFlatVideoOverlay(previewMap, 'riskMapPreview');
+  } else if (containerId === 'riskMapPreview' && previewMap) {
+    previewMap.fitBounds(worldBounds, { padding: [8, 8], animate: false });
+    ensureBaseTileLayer(previewMap, 'riskMapPreview');
+    ensureWorldFlatVideoOverlay(previewMap, 'riskMapPreview');
   }
 
   if (containerId === 'flatMapContainer' && !flatMap) {
-    flatMap = L.map(containerId, { zoomControl: true, attributionControl: false, worldCopyJump: true }).setView([20, 0], 2);
-    flatTileLayer = L.tileLayer(tileUrl, tileOptions).addTo(flatMap);
-  } else if (containerId === 'flatMapContainer' && flatMap && flatTileLayer) {
-    flatMap.removeLayer(flatTileLayer);
-    flatTileLayer = L.tileLayer(tileUrl, tileOptions).addTo(flatMap);
+    flatMap = L.map(containerId, {
+      zoomControl: true,
+      attributionControl: false,
+      worldCopyJump: true,
+      minZoom: 1,
+      maxZoom: 6,
+    }).setView([12, 0], 1.6);
+    flatMap.fitBounds(worldBounds, { padding: [20, 14], animate: false });
+    ensureBaseTileLayer(flatMap, 'flatMapContainer');
+    ensureWorldFlatVideoOverlay(flatMap, 'flatMapContainer');
+  } else if (containerId === 'flatMapContainer' && flatMap) {
+    flatMap.fitBounds(worldBounds, { padding: [20, 14], animate: false });
+    ensureBaseTileLayer(flatMap, 'flatMapContainer');
+    ensureWorldFlatVideoOverlay(flatMap, 'flatMapContainer');
   }
 
   return containerId === 'riskMapPreview' ? previewMap : flatMap;
@@ -965,107 +1365,404 @@ function renderLeafletMap(containerId) {
   const map = ensureMap(containerId);
   if (!map) return;
 
+  if (containerId === 'riskMapPreview') {
+    map.fitBounds([[-60, -170], [82, 170]], { padding: [6, 6], animate: false });
+  } else if (containerId === 'flatMapContainer') {
+    // Fit the full world view for better readability
+    map.fitBounds([[-85, -180], [85, 180]], { padding: [20, 20], animate: false });
+  }
+
   const layers = containerId === 'riskMapPreview' ? previewLayers : flatLayers;
   clearLayers(layers);
+  const phase = (mapRoutePhase % 240) / 240;
+  const pulse = simulationState.active ? (0.7 + Math.sin((mapRoutePhase / 24) * Math.PI * 2) * 0.3) : 0.32;
+  const shockBoost = Date.now() < simulationShockUntil ? 1.35 : 1;
 
   getMapPoints().forEach((point) => {
     const glow = L.circleMarker([point.lat, point.lng], {
-      radius: containerId === 'riskMapPreview' ? 14 : 20,
+      radius: (containerId === 'riskMapPreview' ? 14 : 24) * (simulationState.active ? 1 + pulse * 0.18 : 1) * shockBoost,
       color: point.color,
       fillColor: point.color,
-      fillOpacity: containerId === 'riskMapPreview' ? 0.08 : 0.12,
-      opacity: 0.12,
+      fillOpacity: containerId === 'riskMapPreview' ? 0.11 + pulse * 0.14 : 0.14 + pulse * 0.18,
+      opacity: 0.24 + pulse * 0.35,
       weight: 1,
     }).addTo(map);
     layers.push(glow);
 
     const marker = L.circleMarker([point.lat, point.lng], {
-      radius: containerId === 'riskMapPreview' ? 8 : 12,
+      radius: (containerId === 'riskMapPreview' ? 8 : 14) * (simulationState.active ? 1 + pulse * 0.12 : 1),
       color: point.color,
       fillColor: point.color,
-      fillOpacity: 0.88,
-      weight: 2,
+      fillOpacity: simulationState.active ? 0.95 : 0.88,
+      weight: simulationState.active ? 2.6 : 2.2,
     }).addTo(map);
-    marker.bindPopup(`<strong>${point.label}</strong><br/>Region: ${point.region}`);
+    marker.bindPopup(`<strong>${point.label}</strong><br/><span class="muted">Region: ${point.region}</span>`);
     layers.push(marker);
 
     const core = L.circleMarker([point.lat, point.lng], {
-      radius: containerId === 'riskMapPreview' ? 3 : 4,
+      radius: containerId === 'riskMapPreview' ? 3 : 5,
       color: '#fff7d8',
       fillColor: '#fff7d8',
-      fillOpacity: 0.9,
+      fillOpacity: 0.95,
       weight: 0,
     }).addTo(map);
     layers.push(core);
+
+    // Add readable location label for flat map view
+    if (containerId === 'flatMapContainer') {
+      const label = L.marker([point.lat + 4.5, point.lng], {
+        icon: L.divIcon({
+          className: 'region-label-marker',
+          html: `<div class="region-label-text" style="color: ${point.color}; border-color: ${point.color};">
+            <strong>${point.region}</strong>
+            <div class="label-status">${point.label.split(' · ')[1] || 'stable'}</div>
+          </div>`,
+          iconSize: [120, 50],
+          iconAnchor: [60, 0],
+        }),
+      }).addTo(map);
+      layers.push(label);
+    }
   });
 
   getMapRoutes().forEach((route) => {
     const glow = L.polyline([[route.startLat, route.startLng], [route.endLat, route.endLng]], {
       color: route.color,
-      weight: containerId === 'riskMapPreview' ? 7 : 11,
-      opacity: simulationState.mitigated ? 0.14 : 0.24,
+      weight: (containerId === 'riskMapPreview' ? 7 : 13) * (simulationState.active ? 1.15 : 1) * shockBoost,
+      opacity: simulationState.mitigated ? 0.22 : 0.34 + pulse * 0.2,
       lineCap: 'round',
     }).addTo(map);
     layers.push(glow);
 
     const polyline = L.polyline([[route.startLat, route.startLng], [route.endLat, route.endLng]], {
       color: route.color,
-      weight: containerId === 'riskMapPreview' ? 3 : 5,
-      opacity: simulationState.mitigated ? 0.78 : 0.96,
-      dashArray: simulationState.mitigated ? '8 6' : '2 8',
+      weight: containerId === 'riskMapPreview' ? 3.5 : 6,
+      opacity: simulationState.mitigated ? 0.85 : 0.98,
+      dashArray: simulationState.mitigated ? '10 6' : '12 10',
+      dashOffset: `${Math.floor(phase * 160)}`,
       lineCap: 'round',
     }).addTo(map);
     layers.push(polyline);
   });
 }
 
+
 function renderGlobe() {
   const container = document.getElementById('globeContainer');
   if (!container) return;
 
-  if (typeof Globe === 'undefined') {
-    container.innerHTML = '<div class="panel">Globe view needs network access to load the visualization library.</div>';
-    return;
-  }
-
-  if (!globeView) {
+  if (!techGlobeCanvas || techGlobeCanvas.parentElement !== container) {
     container.innerHTML = '';
-    globeView = Globe()(container)
-      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
-      .backgroundColor('rgba(0,0,0,0)')
-      .showAtmosphere(true)
-      .atmosphereColor('#00d4ff')
-      .atmosphereAltitude(0.16)
-      .arcStroke(0.45)
-      .arcDashLength(0.28)
-      .arcDashGap(0.08)
-      .arcDashAnimateTime(document.body.classList.contains('reduced-motion') ? 1 : 900)
-      .pointAltitude('size')
-      .pointRadius(1.2)
-      .pointResolution(24)
-      .enablePointerInteraction(true);
-
-    const controls = globeView.controls();
-    controls.autoRotate = !document.body.classList.contains('reduced-motion');
-    controls.autoRotateSpeed = 0.32;
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.minDistance = 170;
-    controls.maxDistance = 420;
-    globeView.pointOfView({ lat: 22, lng: -20, altitude: 1.8 }, 0);
+    techGlobeCanvas = document.createElement('canvas');
+    techGlobeCanvas.className = 'tech-globe-canvas';
+    container.appendChild(techGlobeCanvas);
   }
 
-  globeView.width(container.clientWidth).height(container.clientHeight);
-  const controls = globeView.controls();
-  controls.autoRotate = !document.body.classList.contains('reduced-motion');
+  const width = Math.max(1, container.clientWidth);
+  const height = Math.max(1, container.clientHeight);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-  globeView
-    .pointsData(getMapPoints())
-    .pointColor('color')
-    .pointLabel((p) => `<strong>${p.label}</strong><br/>Region: ${p.region}`)
-    .arcsData(getMapRoutes())
-    .arcColor((d) => [d.color, 'rgba(255,255,255,0.16)'])
-    .arcAltitude(() => (simulationState.scope === 'company' ? 0.36 : 0.26));
+  if (techGlobeCanvas.width !== Math.floor(width * dpr) || techGlobeCanvas.height !== Math.floor(height * dpr)) {
+    techGlobeCanvas.width = Math.floor(width * dpr);
+    techGlobeCanvas.height = Math.floor(height * dpr);
+    techGlobeCanvas.style.width = `${width}px`;
+    techGlobeCanvas.style.height = `${height}px`;
+  }
+
+  const ctx = techGlobeCanvas.getContext('2d');
+  if (!ctx) return;
+
+  // Refined world regions with proper positioning for readability
+  const worldRegions = [
+    { name: 'North America', lat: 45, lng: -100, status: 'healthy', services: 3 },
+    { name: 'South America', lat: -15, lng: -60, status: 'healthy', services: 1 },
+    { name: 'Europe', lat: 50, lng: 12, status: 'healthy', services: 2 },
+    { name: 'Africa', lat: 0, lng: 22, status: 'healthy', services: 1 },
+    { name: 'Middle East', lat: 25, lng: 50, status: 'healthy', services: 1 },
+    { name: 'Asia Pacific', lat: 35, lng: 110, status: 'healthy', services: 3 },
+  ];
+
+  // Update region statuses based on simulation state
+  if (simulationState.active) {
+    const affectedRegions = simulationState.region ? [simulationState.region] : [];
+    worldRegions.forEach((region) => {
+      if (affectedRegions.includes(region.name.split(' ')[0].toLowerCase()) || 
+          affectedRegions.some(r => region.name.toLowerCase().includes(r))) {
+        region.status = 'critical';
+      } else {
+        region.status = simulationState.mitigated ? 'protected' : 'warning';
+      }
+    });
+  }
+
+  const drawFrame = () => {
+    const reducedMotion = document.body.classList.contains('reduced-motion');
+    const pulse = simulationState.active ? (0.65 + Math.sin((mapRoutePhase / 20) * Math.PI * 2) * 0.35) : 0.3;
+    const shockBoost = Date.now() < simulationShockUntil ? 1.4 : 1;
+    const w = techGlobeCanvas.width / dpr;
+    const h = techGlobeCanvas.height / dpr;
+    const cx = w * 0.5;
+    const cy = h * 0.5;
+    const radius = Math.min(w, h) * 0.32;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    // Atmospheric outer glow
+    const atmosphereGlow = ctx.createRadialGradient(cx, cy, radius * 0.8, cx, cy, radius * 1.9);
+    atmosphereGlow.addColorStop(0, `rgba(57, 255, 20, ${0.06 + pulse * 0.08})`);
+    atmosphereGlow.addColorStop(0.6, `rgba(0, 212, 255, ${0.04 + pulse * 0.06})`);
+    atmosphereGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = atmosphereGlow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 1.9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Main sphere with subtle gradient
+    const sphereGrad = ctx.createRadialGradient(cx - radius * 0.3, cy - radius * 0.3, radius * 0.15, cx, cy, radius * 1.05);
+    sphereGrad.addColorStop(0, 'rgba(210, 250, 255, 0.85)');
+    sphereGrad.addColorStop(0.35, 'rgba(100, 210, 255, 0.52)');
+    sphereGrad.addColorStop(0.75, 'rgba(40, 100, 180, 0.35)');
+    sphereGrad.addColorStop(1, 'rgba(15, 35, 70, 0.88)');
+    ctx.fillStyle = sphereGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    const project = (latDeg, lngDeg) => {
+      const lat = (latDeg * Math.PI) / 180;
+      const lng = ((lngDeg + techGlobeRotation) * Math.PI) / 180;
+      const x = Math.cos(lat) * Math.sin(lng);
+      const y = Math.sin(lat);
+      const z = Math.cos(lat) * Math.cos(lng);
+      return { x: cx + x * radius * 0.95, y: cy - y * radius * 0.95, z };
+    };
+
+    const drawPolygon = (coords, fill, stroke) => {
+      ctx.beginPath();
+      let started = false;
+      for (const [lat, lng] of coords) {
+        const p = project(lat, lng);
+        if (p.z <= 0.1) {
+          started = false;
+          continue;
+        }
+        if (!started) {
+          ctx.moveTo(p.x, p.y);
+          started = true;
+        } else {
+          ctx.lineTo(p.x, p.y);
+        }
+      }
+      if (!started) return;
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    };
+
+    const continentPolygons = [
+      [[72, -168], [62, -142], [50, -125], [42, -110], [34, -95], [24, -88], [18, -98], [24, -115], [38, -135], [52, -155]],
+      [[12, -82], [2, -80], [-10, -74], [-18, -66], [-24, -62], [-32, -58], [-40, -62], [-50, -70], [-52, -76], [-42, -80], [-26, -78], [-8, -76], [6, -78]],
+      [[70, -10], [62, 8], [52, 22], [46, 34], [44, 24], [40, 12], [44, 2], [54, -8], [64, -14]],
+      [[36, -16], [30, -8], [20, 0], [10, 8], [2, 16], [-8, 24], [-20, 30], [-32, 28], [-35, 18], [-30, 6], [-20, -4], [-6, -12], [8, -14], [22, -10]],
+      [[56, 28], [50, 48], [44, 66], [40, 86], [44, 106], [50, 126], [56, 146], [44, 162], [28, 150], [20, 128], [12, 102], [14, 76], [18, 56], [26, 40], [38, 30]],
+      [[-10, 112], [-18, 122], [-24, 134], [-32, 146], [-38, 152], [-40, 138], [-34, 124], [-26, 116], [-16, 110]],
+    ];
+
+    const countryMarkers = [
+      { label: 'US', lat: 39, lng: -98 },
+      { label: 'BR', lat: -14, lng: -52 },
+      { label: 'UK', lat: 54, lng: -2 },
+      { label: 'NG', lat: 9, lng: 8 },
+      { label: 'IN', lat: 21, lng: 78 },
+      { label: 'JP', lat: 36, lng: 138 },
+      { label: 'AU', lat: -25, lng: 133 },
+    ];
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Subtle continental grid
+    ctx.strokeStyle = 'rgba(150, 220, 255, 0.16)';
+    ctx.lineWidth = 0.8;
+    
+    // Latitude lines
+    for (let lat = -60; lat <= 60; lat += 20) {
+      ctx.beginPath();
+      let started = false;
+      for (let lng = -180; lng <= 180; lng += 5) {
+        const p = project(lat, lng);
+        if (p.z <= 0.1) {
+          started = false;
+          continue;
+        }
+        if (!started) {
+          ctx.moveTo(p.x, p.y);
+          started = true;
+        } else {
+          ctx.lineTo(p.x, p.y);
+        }
+      }
+      ctx.stroke();
+    }
+
+    // Longitude lines
+    for (let lng = -180; lng <= 180; lng += 30) {
+      ctx.beginPath();
+      let started = false;
+      for (let lat = -75; lat <= 75; lat += 4) {
+        const p = project(lat, lng);
+        if (p.z <= 0.1) {
+          started = false;
+          continue;
+        }
+        if (!started) {
+          ctx.moveTo(p.x, p.y);
+          started = true;
+        } else {
+          ctx.lineTo(p.x, p.y);
+        }
+      }
+      ctx.stroke();
+    }
+
+    // Render visible continent silhouettes so the globe clearly reads as world geography.
+    continentPolygons.forEach((coords) => {
+      drawPolygon(coords, 'rgba(82, 176, 128, 0.26)', 'rgba(132, 218, 168, 0.4)');
+    });
+
+    // Render a few country anchors for quick orientation.
+    ctx.font = "10px 'IBM Plex Mono'";
+    ctx.textAlign = 'center';
+    countryMarkers.forEach((marker) => {
+      const p = project(marker.lat, marker.lng);
+      if (p.z <= 0.1) return;
+      ctx.fillStyle = 'rgba(244, 245, 248, 0.92)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(222, 236, 255, 0.88)';
+      ctx.fillText(marker.label, p.x, p.y - 6);
+    });
+
+    // Render world regions with status indicators
+    worldRegions.forEach((region) => {
+      const p = project(region.lat, region.lng);
+      if (p.z <= 0.1) return;
+
+      // Status color mapping
+      let regionColor = 'rgba(57, 255, 20, 0.8)'; // healthy - neon green
+      let glowColor = 'rgba(57, 255, 20, 0.3)';
+      let textColor = '#e8f5ff';
+
+      if (region.status === 'critical') {
+        regionColor = 'rgba(255, 45, 74, 0.85)'; // critical - red
+        glowColor = 'rgba(255, 45, 74, 0.4)';
+      } else if (region.status === 'warning') {
+        regionColor = 'rgba(255, 184, 0, 0.85)'; // warning - amber
+        glowColor = 'rgba(255, 184, 0, 0.35)';
+      } else if (region.status === 'protected') {
+        regionColor = 'rgba(57, 255, 20, 0.9)'; // protected - enhanced green
+        glowColor = 'rgba(57, 255, 20, 0.4)';
+      }
+
+      const baseSize = 6 + region.services * 2;
+      const pulseSize = simulationState.active ? 1 + pulse * 0.35 : 1;
+      const finalSize = baseSize * pulseSize * shockBoost;
+
+      // Outer glow halo
+      const halo = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, finalSize * 2.5);
+      halo.addColorStop(0, glowColor);
+      halo.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = halo;
+      ctx.globalAlpha = 0.6 * (simulationState.active ? pulse : 0.5);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, finalSize * 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Main indicator dot
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = regionColor;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, finalSize, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Protective border for mitigated regions
+      if (region.status === 'protected') {
+        ctx.strokeStyle = 'rgba(57, 255, 20, 0.6)';
+        ctx.lineWidth = 1.5 * shockBoost;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, finalSize + 2, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    });
+
+    // Render cascade routes
+    const routes = getMapRoutes();
+    routes.forEach((route) => {
+      const start = project(route.startLat, route.startLng);
+      const end = project(route.endLat, route.endLng);
+      if (start.z <= 0.1 || end.z <= 0.1) return;
+
+      const midX = (start.x + end.x) / 2;
+      const midY = (start.y + end.y) / 2 - radius * 0.15;
+
+      ctx.strokeStyle = route.color;
+      ctx.lineWidth = 1.8 * shockBoost;
+      ctx.globalAlpha = 0.55 + pulse * 0.25;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.quadraticCurveTo(midX, midY, end.x, end.y);
+      ctx.stroke();
+
+      // Animated energy pulse along route
+      const routePhase = (mapRoutePhase + routes.indexOf(route) * 25) % 300;
+      const t = routePhase / 300;
+      const energyX = (1 - t) * (1 - t) * start.x + 2 * (1 - t) * t * midX + t * t * end.x;
+      const energyY = (1 - t) * (1 - t) * start.y + 2 * (1 - t) * t * midY + t * t * end.y;
+
+      const energyGlow = ctx.createRadialGradient(energyX, energyY, 0, energyX, energyY, 8 * shockBoost);
+      energyGlow.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+      energyGlow.addColorStop(0.7, route.color);
+      energyGlow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = energyGlow;
+      ctx.globalAlpha = 0.8 + pulse * 0.2;
+      ctx.beginPath();
+      ctx.arc(energyX, energyY, 6 * shockBoost, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+
+    ctx.restore();
+
+    // Protective outer ring border
+    ctx.strokeStyle = `rgba(57, 255, 20, ${0.35 + pulse * 0.2})`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * 1.02, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (!reducedMotion) techGlobeRotation += 0.15;
+    if (techGlobeRotation > 360) techGlobeRotation -= 360;
+    techGlobeAnimationId = requestAnimationFrame(drawFrame);
+  };
+
+  if (!techGlobeAnimationId) {
+    techGlobeAnimationId = requestAnimationFrame(drawFrame);
+  }
+}
+
+
+function stopTechGlobeAnimation() {
+  if (techGlobeAnimationId) {
+    cancelAnimationFrame(techGlobeAnimationId);
+    techGlobeAnimationId = null;
+  }
 }
 
 function renderMapLegend() {
@@ -1118,9 +1815,14 @@ function setRiskView(view) {
   if (view === 'globe') {
     renderGlobe();
   } else if (view === 'flat') {
+    stopTechGlobeAnimation();
     renderLeafletMap('flatMapContainer');
-    setTimeout(() => flatMap?.invalidateSize(), 50);
+    setTimeout(() => {
+      flatMap?.invalidateSize();
+      flatMap?.fitBounds([[-60, -170], [82, 170]], { padding: [20, 14], animate: false });
+    }, 80);
   } else {
+    stopTechGlobeAnimation();
     renderRegionList();
   }
 }
@@ -1210,6 +1912,13 @@ function wireInteractions() {
     applyTheme(event.target.value);
     renderDashboard();
   });
+  document.getElementById('textSizeSelector').addEventListener('change', (event) => {
+    applyTextSizeSetting(event.target.value);
+  });
+  document.getElementById('contrastSelector').addEventListener('change', (event) => {
+    applyContrastSetting(event.target.value);
+    renderDashboard();
+  });
   document.getElementById('motionToggle').addEventListener('change', (event) => {
     applyMotionSetting(event.target.value);
     renderDashboard();
@@ -1218,25 +1927,35 @@ function wireInteractions() {
     narrationEnabled = event.target.value === 'on';
     localStorage.setItem('cascade-voiceover', narrationEnabled ? 'on' : 'off');
     updateVoiceStatus(narrationEnabled ? 'Voice readying…' : 'Voiceover is turned off.', narrationEnabled ? '' : 'error');
-    if (!narrationEnabled && typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+    if (!narrationEnabled) stopActiveNarration();
   });
   document.getElementById('voiceRate').addEventListener('input', (event) => {
     narrationRate = Number(event.target.value);
     localStorage.setItem('cascade-voice-rate', String(narrationRate));
   });
   document.getElementById('demoPresetSelector').addEventListener('change', (event) => {
-    selectedDemoPreset = event.target.value === 'short' ? 'short' : 'extended';
+    selectedDemoPreset = event.target.value === 'full' ? 'full' : 'full';
     localStorage.setItem('cascade-demo-preset', selectedDemoPreset);
   });
 
   document.getElementById('testVoiceBtn').addEventListener('click', async () => {
     const ready = await ensureNarrationReady();
     if (ready) {
-      speakNarration('Cascade Prevention Engine is online. Predict the cascade, cut the blast radius, and keep customers protected.');
+      await speakNarration('Cascade Prevention Engine is online. Predict the cascade, cut the blast radius, and keep customers protected.', 'test');
     }
   });
 
   document.getElementById('runDemoBtn').addEventListener('click', runAutoplayDemo);
+
+  // ── AI Chat interactions ───────────────────────────────────────────────────
+  document.getElementById('aiChatSendBtn')?.addEventListener('click', sendChatMessage);
+  document.getElementById('aiChatClearBtn')?.addEventListener('click', clearChat);
+  document.getElementById('aiChatInput')?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      sendChatMessage();
+    }
+  });
 }
 
 // ── Autoplay demo helpers ─────────────────────────────────────────────────────
@@ -1262,92 +1981,232 @@ function setDemoBanner(text) {
 }
 
 async function runAutoplayDemo() {
+  if (demoRunning) return;
+  demoRunning = true;
   const demoBtn = document.getElementById('runDemoBtn');
   const preset = getDemoPreset();
-  const { timings, script } = preset;
-  const previousVoiceRate = narrationRate;
+  const { script, timings } = preset;
   if (demoBtn) demoBtn.disabled = true;
+  try {
+    // Warm up the voice engine before the demo begins (required user-gesture priming)
+    const ready = await ensureNarrationReady();
+    if (!ready) {
+      updateVoiceStatus('Voice files not ready. Click Test Voice and try again.', 'error');
+      return;
+    }
 
-  await ensureNarrationReady();
+    // ── Step 1: Navigate to Simulator, configure scenario, narrate ──────────
+    navigateTo('simulator');
+    setDemoBanner('Step 1 of 7 &mdash; Configuring a Queue Saturation Cascade at maximum company-wide scope...');
+    await sleep(260);
 
-  narrationRate = preset.voiceRate;
+    document.getElementById('scenarioSelector').value = 'queue-saturation';
+    document.getElementById('regionSelector').value = 'us-east-1';
+    document.getElementById('scopeSelector').value = 'company';
+    document.getElementById('intensitySlider').value = '4';
+    document.getElementById('intensityValue').textContent = '4 / 5';
 
-  // Step 1 — navigate to simulator and configure scenario
-  navigateTo('simulator');
-  setDemoBanner(`Step 1 of 7 &mdash; ${preset.label} &mdash; Configuring a Queue Saturation Cascade at maximum company-wide scope...`);
-  speakNarration(script.step1);
-  await sleep(timings.intro);
+    await speakNarration(script.step1, 'step1');
+    await sleep(timings.transition);
 
-  document.getElementById('scenarioSelector').value = 'queue-saturation';
-  document.getElementById('regionSelector').value = 'us-east-1';
-  document.getElementById('scopeSelector').value = 'company';
-  document.getElementById('intensitySlider').value = '4';
-  document.getElementById('intensityValue').textContent = '4 / 5';
+    // ── Step 2: Fire the simulation, narrate ────────────────────────────────
+    setDemoBanner('Step 2 of 7 &mdash; Simulating cascade event &mdash; AI is projecting blast radius...');
+    simulateScenario();
+    await sleep(220);
+    await speakNarration(script.step2, 'step2');
+    await sleep(timings.transition);
 
-  // Step 2 — fire the simulation
-  setDemoBanner('Step 2 of 7 &mdash; Simulating cascade event &mdash; AI is projecting blast radius...');
-  speakNarration(script.step2);
-  await sleep(timings.preSimulate);
-  simulateScenario();
+    // ── Step 3: Dependency graph ─────────────────────────────────────────────
+    navigateTo('dependency-graph');
+    setDemoBanner('Step 3 of 7 &mdash; Examining live service topology &mdash; red paths mark the cascade spread...');
+    await sleep(300);
+    await speakNarration(script.step3, 'step3');
+    await sleep(timings.transition);
 
-  // Step 3 — dependency graph shows impact spread
-  await sleep(timings.graphHold);
-  navigateTo('dependency-graph');
-  setDemoBanner('Step 3 of 7 &mdash; Examining live service topology &mdash; red paths mark the cascade spread...');
-  speakNarration(script.step3);
+    // ── Step 4: Risk map — globe → flat → list ───────────────────────────────
+    navigateTo('risk-map');
+    setRiskView('globe');
+    setDemoBanner('Step 4 of 7 &mdash; Reviewing global cascade footprint across globe, flat map, and region list views...');
+    await sleep(250);
+    await speakNarration(script.globe, 'globe');
+    await sleep(timings.transition);
 
-  // Step 4 — risk views cycle through globe, flat map, and region list
-  await sleep(timings.graphHold);
-  navigateTo('risk-map');
-  setRiskView('globe');
-  setDemoBanner('Step 4 of 7 &mdash; Reviewing global cascade footprint across globe, flat map, and region list views...');
-  speakNarration(script.globe);
+    setRiskView('flat');
+    setDemoBanner('Step 4 of 7 &mdash; Flat map view exposes tactical regional spread and translucent route overlays...');
+    await sleep(220);
+    await speakNarration(script.flat, 'flat');
+    await sleep(timings.transition);
 
-  await sleep(timings.globeHold);
-  setRiskView('flat');
-  setDemoBanner('Step 4 of 7 &mdash; Flat map view exposes tactical regional spread and translucent route overlays...');
-  speakNarration(script.flat);
+    setRiskView('list');
+    setDemoBanner('Step 4 of 7 &mdash; Region list ranks affected areas for quick mitigation prioritization...');
+    await sleep(220);
+    await speakNarration(script.list, 'list');
+    await sleep(timings.transition);
 
-  await sleep(timings.flatHold);
-  setRiskView('list');
-  setDemoBanner('Step 4 of 7 &mdash; Region list ranks affected areas for quick mitigation prioritization...');
-  speakNarration(script.list);
+    // ── Step 5: Remediation plan review ─────────────────────────────────────
+    navigateTo('remediation');
+    selectedPlan = remediationPlans[0];
+    renderPlans();
+    renderPlanDetail();
+    setDemoBanner('Step 5 of 7 &mdash; AI-generated remediation plan ready for operator review...');
+    await sleep(260);
+    await speakNarration(script.step5, 'step5');
+    await sleep(timings.transition);
 
-  // Step 5 — remediation plan review
-  await sleep(timings.listHold);
-  navigateTo('remediation');
-  setDemoBanner('Step 5 of 7 &mdash; AI-generated remediation plan ready for operator review...');
-  speakNarration(script.step5);
-  selectedPlan = remediationPlans[0];
-  renderPlans();
-  renderPlanDetail();
+    // ── Step 6: Approve the plan ─────────────────────────────────────────────
+    document.getElementById('roleSelector').value = 'admin';
+    renderPlanDetail();
+    setDemoBanner('Step 6 of 7 &mdash; Approving AI mitigation plan...');
+    await sleep(200);
+    await speakNarration(script.step6, 'step6');
+    await sleep(timings.transition);
+    await submitApproval(true);
+    await sleep(timings.transition);
 
-  // Step 6 — approve the plan
-  await sleep(timings.remediationHold);
-  setDemoBanner('Step 6 of 7 &mdash; Approving AI mitigation plan...');
-  speakNarration(script.step6);
-  document.getElementById('roleSelector').value = 'admin';
-  renderPlanDetail();
-  await sleep(timings.approvalLead);
-  await submitApproval(true);
+    // ── Step 7: Overview — guarded state ────────────────────────────────────
+    navigateTo('overview');
+    setDemoBanner('Step 7 of 7 &mdash; Cascade contained. System returned to Guarded state. Customer impact avoided.');
+    await sleep(260);
+    await speakNarration(script.step7, 'step7');
+    await sleep(timings.overviewHold);
+  } finally {
+    // ── Cleanup ──────────────────────────────────────────────────────────────
+    setDemoBanner(null);
+    stopActiveNarration();
+    if (demoBtn) demoBtn.disabled = false;
+    demoRunning = false;
+  }
+}
 
-  // Step 7 — overview shows guarded state
-  await sleep(timings.approvalCommit);
-  navigateTo('overview');
-  setDemoBanner('Step 7 of 7 &mdash; Cascade contained. System returned to Guarded state. Customer impact avoided.');
-  speakNarration(script.step7);
+// ──────────────────────────────────────────────────────────────────────────────
+// AI COPILOT CHAT FUNCTIONS
+// ──────────────────────────────────────────────────────────────────────────────
 
-  await sleep(timings.overviewHold);
-  setDemoBanner(null);
-  if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
-  narrationRate = previousVoiceRate;
-  if (demoBtn) demoBtn.disabled = false;
+function initializeChat() {
+  chatSessionId = `chat-${Date.now()}`;
+  chatMessages = [];
+  renderChatMessages();
+  const input = document.getElementById('aiChatInput');
+  if (input) input.value = '';
+  const status = document.getElementById('aiChatStatus');
+  if (status) status.textContent = '';
+}
+
+function renderChatMessages() {
+  const container = document.getElementById('aiChatMessages');
+  if (!container) return;
+
+  container.innerHTML = chatMessages
+    .map((msg) => {
+      const isUser = msg.role === 'user';
+      const isSystem = msg.role === 'system';
+      return `
+        <div class="chat-message ${msg.role}">
+          ${!isUser && !isSystem ? '<div class="chat-avatar">AI</div>' : ''}
+          <div class="chat-bubble">${escapeHtml(msg.content)}</div>
+        </div>
+      `;
+    })
+    .join('');
+
+  // Auto-scroll to bottom
+  container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
+function setChatStatus(message, type = '') {
+  const status = document.getElementById('aiChatStatus');
+  if (!status) return;
+  status.textContent = message;
+  status.className = `chat-status ${type}`;
+}
+
+function addChatMessage(role, content) {
+  chatMessages.push({ role, content });
+  renderChatMessages();
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('aiChatInput');
+  if (!input || chatLoading) return;
+
+  const message = input.value.trim();
+  if (!message) {
+    setChatStatus('Enter a message to continue', 'error');
+    return;
+  }
+
+  // Add user message
+  addChatMessage('user', message);
+  input.value = '';
+
+  // Check if live API is configured
+  const baseUrl = getLiveApiBaseUrl();
+  if (!baseUrl) {
+    addChatMessage('system', 'Live API not configured. Chat requires API connection.');
+    setChatStatus('Configure Live API Base URL in settings to use chat', 'error');
+    return;
+  }
+
+  // Send to backend
+  chatLoading = true;
+  setChatStatus('AI thinking…', 'loading');
+
+  try {
+    const headers = buildHeaders();
+    const response = await fetch(`${baseUrl}${CHAT_API_PATH}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        message,
+        sessionId: chatSessionId,
+        context: {
+          dependencyGraph: dependencyNodes,
+          signatures,
+          remediationPlans,
+          simulationState,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Chat API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    addChatMessage('assistant', data.response);
+    setChatStatus('', '');
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    addChatMessage('system', `Error: ${errorMsg}`);
+    setChatStatus(`Failed: ${errorMsg}`, 'error');
+  } finally {
+    chatLoading = false;
+    document.getElementById('aiChatInput')?.focus();
+  }
+}
+
+function clearChat() {
+  initializeChat();
+  setChatStatus('', '');
 }
 
 // ── Dashboard bootstrap ───────────────────────────────────────────────────────
 function bootstrapDashboard() {
   initializePreferences();
   cacheNarrationVoices();
+  startMapAnimationLoop();
+  initializeChat();
   renderTimeline(getDefaultTimeline());
   initializeNavigation();
   wireInteractions();

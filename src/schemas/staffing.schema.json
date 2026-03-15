@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StaffingTelemetry",
+  "description": "Human capital and workforce capacity metrics",
+  "type": "object",
+  "properties": {
+    "source": { "const": "staffing" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "departmentId": { "type": "string" },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "headcountPctOfTarget": { "type": "number", "minimum": 0, "maximum": 200 },
+        "absenceRatePct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "criticalRolesCoveredPct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "openRequisitions": { "type": "integer", "minimum": 0 },
+        "avgTimeToFillDays": { "type": "number", "minimum": 0 },
+        "onboardingBacklogDays": { "type": "number", "minimum": 0 },
+        "turnoverRateAnnualPct": { "type": "number", "minimum": 0, "maximum": 100 }
+      },
+      "required": ["headcountPctOfTarget", "absenceRatePct"]
+    }
+  },
+  "required": ["source", "timestamp", "departmentId", "metrics"]
+}

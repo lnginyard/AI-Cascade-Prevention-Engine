@@ -11,21 +11,21 @@
     },
     "CascadePreventionStack": {
       "type": "aws:cloudformation:stack",
-      "environment": "aws://unknown-account/unknown-region",
+      "environment": "aws://593688888943/us-east-1",
       "properties": {
         "templateFile": "CascadePreventionStack.template.json",
         "terminationProtection": false,
         "validateOnSynth": false,
-        "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
-        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/78bc65ca7e7c9d5947280bb9e5a579058b96ad9acdca41a73890d989f1513519.json",
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::593688888943:role/cdk-hnb659fds-deploy-role-593688888943-us-east-1",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::593688888943:role/cdk-hnb659fds-cfn-exec-role-593688888943-us-east-1",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-593688888943-us-east-1/d4ad54ad7866f740311f72c7032496b3d0b6a45a24ea43e076d0e1f6612a40c2.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
           "CascadePreventionStack.assets"
         ],
         "lookupRole": {
-          "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
+          "arn": "arn:${AWS::Partition}:iam::593688888943:role/cdk-hnb659fds-lookup-role-593688888943-us-east-1",
           "requiresBootstrapStackVersion": 8,
           "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
         }
@@ -230,6 +230,240 @@
           {
             "type": "aws:cdk:logicalId",
             "data": "SignaturesTableName"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleBucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleBucketD13072BC"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleBucket/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleBucketPolicyDAB29021"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorFunction": [
+          {
+            "type": "aws:cdk:is-custom-resource-handler-runtime-family",
+            "data": 0
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorFunction/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleCertificateCertificateRequestorFunctionServiceRole8C3DAE93"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorFunction/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy21A21578"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleCertificateCertificateRequestorFunction6D6C1F3F"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleCertificateCertificateRequestorResource42BB465B"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleDistribution/Origin1/S3OriginAccessControl/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleDistributionOrigin1S3OriginAccessControl2F757E63"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleDistribution/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleDistribution9384F8A9"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleDeployment/AwsCliLayer/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleDeploymentAwsCliLayer5FA0FA8F"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleDeployment/CustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleDeploymentCustomResource7314077F"
+          }
+        ],
+        "/CascadePreventionStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C": [
+          {
+            "type": "aws:cdk:is-custom-resource-handler-singleton",
+            "data": true
+          },
+          {
+            "type": "aws:cdk:is-custom-resource-handler-runtime-family",
+            "data": 2
+          },
+          {
+            "type": "aws:cdk:is-custom-resource-handler-singleton",
+            "data": true
+          },
+          {
+            "type": "aws:cdk:is-custom-resource-handler-runtime-family",
+            "data": 2
+          }
+        ],
+        "/CascadePreventionStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265"
+          }
+        ],
+        "/CascadePreventionStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF"
+          }
+        ],
+        "/CascadePreventionStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleAliasRecord/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleAliasRecordA4E0EB7E"
+          }
+        ],
+        "/CascadePreventionStack/AWSCloudFrontPartitionHostedZoneIdMap": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AWSCloudFrontPartitionHostedZoneIdMap"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleAliasRecordIpv6/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleAliasRecordIpv6DFDDB8A7"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleBucketName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleBucketName"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleCloudFrontDomain": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleCloudFrontDomain"
+          }
+        ],
+        "/CascadePreventionStack/OperationsConsoleUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "OperationsConsoleUrl"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteBucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteBucketF1B2E614"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteBucket/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteBucketPolicy9036E1D1"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorFunction": [
+          {
+            "type": "aws:cdk:is-custom-resource-handler-runtime-family",
+            "data": 0
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorFunction/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteCertificateCertificateRequestorFunctionServiceRole8434EFF1"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorFunction/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy77BD8365"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteCertificateCertificateRequestorFunction1B9EFF6D"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteCertificateCertificateRequestorResource29689D96"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteDistribution/Origin1/S3OriginAccessControl/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteDistributionOrigin1S3OriginAccessControl60C6DCD9"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteDistribution/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteDistributionBC7D0080"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteDeployment/AwsCliLayer/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteDeploymentAwsCliLayer83719E88"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteDeployment/CustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteDeploymentCustomResourceC0FCD903"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteAliasRecord/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteAliasRecordF1C652A8"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteAliasRecordIpv6/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteAliasRecordIpv61CD0C741"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteBucketName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteBucketName"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteCloudFrontDomain": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteCloudFrontDomain"
+          }
+        ],
+        "/CascadePreventionStack/ArticleSiteUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ArticleSiteUrl"
           }
         ],
         "/CascadePreventionStack/PlaybookMappings/PlaybookMappingsTable": [
@@ -443,7 +677,7 @@
         "/CascadePreventionStack/CascadePreventionApi/Deployment/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "CascadePreventionApiDeploymentF8AFB8859feef5796f9c93e354a72aa0b126bbea"
+            "data": "CascadePreventionApiDeploymentF8AFB88511edcbe92d147bf83bef851bfda9db8f"
           }
         ],
         "/CascadePreventionStack/CascadePreventionApi/DeploymentStage.v1/Resource": [
@@ -458,16 +692,34 @@
             "data": "CascadePreventionApiEndpoint7176775B"
           }
         ],
+        "/CascadePreventionStack/CascadePreventionApi/Default/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CascadePreventionApiOPTIONS6C26B874"
+          }
+        ],
         "/CascadePreventionStack/CascadePreventionApi/Default/telemetry/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CascadePreventionApitelemetryF4536F37"
           }
         ],
+        "/CascadePreventionStack/CascadePreventionApi/Default/telemetry/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CascadePreventionApitelemetryOPTIONS802B7DED"
+          }
+        ],
         "/CascadePreventionStack/CascadePreventionApi/Default/telemetry/ingest/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CascadePreventionApitelemetryingest245E4A33"
+          }
+        ],
+        "/CascadePreventionStack/CascadePreventionApi/Default/telemetry/ingest/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CascadePreventionApitelemetryingestOPTIONS93E589B6"
           }
         ],
         "/CascadePreventionStack/CascadePreventionApi/Default/telemetry/ingest/POST/ApiPermission.CascadePreventionStackCascadePreventionApiACAC9F72.POST..telemetry.ingest": [
@@ -494,6 +746,12 @@
             "data": "CascadePreventionApidependencygraph47388B31"
           }
         ],
+        "/CascadePreventionStack/CascadePreventionApi/Default/dependency-graph/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CascadePreventionApidependencygraphOPTIONS79088A9A"
+          }
+        ],
         "/CascadePreventionStack/CascadePreventionApi/Default/dependency-graph/GET/ApiPermission.CascadePreventionStackCascadePreventionApiACAC9F72.GET..dependency-graph": [
           {
             "type": "aws:cdk:logicalId",
@@ -518,10 +776,22 @@
             "data": "CascadePreventionApicascadesignaturesA85009AF"
           }
         ],
+        "/CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CascadePreventionApicascadesignaturesOPTIONS285F399E"
+          }
+        ],
         "/CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/active/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CascadePreventionApicascadesignaturesactive777A573D"
+          }
+        ],
+        "/CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/active/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CascadePreventionApicascadesignaturesactiveOPTIONS09693B3B"
           }
         ],
         "/CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/active/GET/ApiPermission.CascadePreventionStackCascadePreventionApiACAC9F72.GET..cascade-signatures.active": [
@@ -548,6 +818,12 @@
             "data": "CascadePreventionApiremediationplansE9F163CB"
           }
         ],
+        "/CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CascadePreventionApiremediationplansOPTIONSDBBEFEC6"
+          }
+        ],
         "/CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/GET/ApiPermission.CascadePreventionStackCascadePreventionApiACAC9F72.GET..remediation-plans": [
           {
             "type": "aws:cdk:logicalId",
@@ -572,10 +848,22 @@
             "data": "CascadePreventionApiremediationplansplanIdF622C81E"
           }
         ],
+        "/CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CascadePreventionApiremediationplansplanIdOPTIONSC85E24D6"
+          }
+        ],
         "/CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/approval/Resource": [
           {
             "type": "aws:cdk:logicalId",
             "data": "CascadePreventionApiremediationplansplanIdapprovalE74C4FA1"
+          }
+        ],
+        "/CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/approval/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CascadePreventionApiremediationplansplanIdapprovalOPTIONSFCA7D10B"
           }
         ],
         "/CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/approval/POST/ApiPermission.CascadePreventionStackCascadePreventionApiACAC9F72.POST..remediation-plans.{planId}.approval": [
@@ -654,6 +942,12 @@
           {
             "type": "aws:cdk:logicalId",
             "data": "CascadeOperatorApiKeyId"
+          }
+        ],
+        "/CascadePreventionStack/CascadePreventionApiUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CascadePreventionApiUrl"
           }
         ],
         "/CascadePreventionStack/BootstrapVersion": [

@@ -769,10 +769,7 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": {
-      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-us-east-1"
-     },
-     "S3Key": "dd0fd4b30a18fa19ccea423a3de3e247d225591d746e9922bde143330dc711be.zip"
+     "ZipFile": "exports.handler = async function(event) {\n  return {\n    statusCode: 200,\n    body: JSON.stringify({\n      message: 'Model deployer placeholder executed',\n      received: event || null\n    })\n  };\n};\n"
     },
     "Environment": {
      "Variables": {
@@ -1029,10 +1026,7 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": {
-      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-us-east-1"
-     },
-     "S3Key": "078bb210b1613ad2d5b02ee6e59fe4ab283360f37eb9b258c5388b7d66a23395.zip"
+     "ZipFile": "exports.handler = async function(event) {\n  return {\n    statusCode: 200,\n    body: JSON.stringify({\n      message: 'Signature matcher placeholder executed',\n      received: event || null\n    })\n  };\n};\n"
     },
     "Environment": {
      "Variables": {
@@ -1147,6 +1141,1048 @@
    },
    "Metadata": {
     "aws:cdk:path": "CascadePreventionStack/AnomalyToSignatureRule/AllowEventRuleCascadePreventionStackSignatureMatcherFunction6652C3F8"
+   }
+  },
+  "OperationsConsoleBucketD13072BC": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "aws-cdk:cr-owned:c19e2409",
+      "Value": "true"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleBucket/Resource"
+   }
+  },
+  "OperationsConsoleBucketPolicyDAB29021": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "OperationsConsoleBucketD13072BC"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "s3:*",
+       "Condition": {
+        "Bool": {
+         "aws:SecureTransport": "false"
+        }
+       },
+       "Effect": "Deny",
+       "Principal": {
+        "AWS": "*"
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "OperationsConsoleBucketD13072BC",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "OperationsConsoleBucketD13072BC",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "s3:GetObject",
+       "Condition": {
+        "StringEquals": {
+         "AWS:SourceArn": {
+          "Fn::Join": [
+           "",
+           [
+            "arn:",
+            {
+             "Ref": "AWS::Partition"
+            },
+            ":cloudfront::",
+            {
+             "Ref": "AWS::AccountId"
+            },
+            ":distribution/",
+            {
+             "Ref": "OperationsConsoleDistribution9384F8A9"
+            }
+           ]
+          ]
+         }
+        }
+       },
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "cloudfront.amazonaws.com"
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "OperationsConsoleBucketD13072BC",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleBucket/Policy/Resource"
+   }
+  },
+  "OperationsConsoleCertificateCertificateRequestorFunctionServiceRole8C3DAE93": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorFunction/ServiceRole/Resource"
+   }
+  },
+  "OperationsConsoleCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy21A21578": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "acm:AddTagsToCertificate",
+        "acm:DeleteCertificate",
+        "acm:DescribeCertificate",
+        "acm:RequestCertificate",
+        "route53:GetChange"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      },
+      {
+       "Action": "route53:changeResourceRecordSets",
+       "Condition": {
+        "ForAllValues:StringEquals": {
+         "route53:ChangeResourceRecordSetsRecordTypes": [
+          "CNAME"
+         ],
+         "route53:ChangeResourceRecordSetsActions": [
+          "UPSERT"
+         ]
+        },
+        "ForAllValues:StringLike": {
+         "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+          "*.aicpe.dev"
+         ]
+        }
+       },
+       "Effect": "Allow",
+       "Resource": "arn:aws:route53:::hostedzone/Z09581692MGKXVAUBBRRM"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "OperationsConsoleCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy21A21578",
+    "Roles": [
+     {
+      "Ref": "OperationsConsoleCertificateCertificateRequestorFunctionServiceRole8C3DAE93"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorFunction/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "OperationsConsoleCertificateCertificateRequestorFunction6D6C1F3F": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "b073cebcf4d61fb152a30f5a5e57a94df7f980a549fdf1a79a0b18c5750522d8.zip"
+    },
+    "Handler": "index.certificateRequestHandler",
+    "Role": {
+     "Fn::GetAtt": [
+      "OperationsConsoleCertificateCertificateRequestorFunctionServiceRole8C3DAE93",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "OperationsConsoleCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy21A21578",
+    "OperationsConsoleCertificateCertificateRequestorFunctionServiceRole8C3DAE93"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorFunction/Resource",
+    "aws:asset:path": "asset.b073cebcf4d61fb152a30f5a5e57a94df7f980a549fdf1a79a0b18c5750522d8",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "OperationsConsoleCertificateCertificateRequestorResource42BB465B": {
+   "Type": "AWS::CloudFormation::CustomResource",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "OperationsConsoleCertificateCertificateRequestorFunction6D6C1F3F",
+      "Arn"
+     ]
+    },
+    "DomainName": "aicpe.dev",
+    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
+    "Region": "us-east-1"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorResource/Default"
+   }
+  },
+  "OperationsConsoleDistributionOrigin1S3OriginAccessControl2F757E63": {
+   "Type": "AWS::CloudFront::OriginAccessControl",
+   "Properties": {
+    "OriginAccessControlConfig": {
+     "Name": "CascadePreventionStackOperatOrigin1S3OriginAccessControl4C2177FA",
+     "OriginAccessControlOriginType": "s3",
+     "SigningBehavior": "always",
+     "SigningProtocol": "sigv4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleDistribution/Origin1/S3OriginAccessControl/Resource"
+   }
+  },
+  "OperationsConsoleDistribution9384F8A9": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "Aliases": [
+      "aicpe.dev"
+     ],
+     "Comment": "Cascade Prevention Engine operations console",
+     "CustomErrorResponses": [
+      {
+       "ErrorCachingMinTTL": 300,
+       "ErrorCode": 403,
+       "ResponseCode": 200,
+       "ResponsePagePath": "/index.html"
+      },
+      {
+       "ErrorCachingMinTTL": 300,
+       "ErrorCode": 404,
+       "ResponseCode": 200,
+       "ResponsePagePath": "/index.html"
+      }
+     ],
+     "DefaultCacheBehavior": {
+      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+      "Compress": true,
+      "TargetOriginId": "CascadePreventionStackOperationsConsoleDistributionOrigin1BA5C3A76",
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "DefaultRootObject": "index.html",
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "DomainName": {
+        "Fn::GetAtt": [
+         "OperationsConsoleBucketD13072BC",
+         "RegionalDomainName"
+        ]
+       },
+       "Id": "CascadePreventionStackOperationsConsoleDistributionOrigin1BA5C3A76",
+       "OriginAccessControlId": {
+        "Fn::GetAtt": [
+         "OperationsConsoleDistributionOrigin1S3OriginAccessControl2F757E63",
+         "Id"
+        ]
+       },
+       "S3OriginConfig": {
+        "OriginAccessIdentity": ""
+       }
+      }
+     ],
+     "ViewerCertificate": {
+      "AcmCertificateArn": {
+       "Fn::GetAtt": [
+        "OperationsConsoleCertificateCertificateRequestorResource42BB465B",
+        "Arn"
+       ]
+      },
+      "MinimumProtocolVersion": "TLSv1.2_2021",
+      "SslSupportMethod": "sni-only"
+     }
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleDistribution/Resource"
+   }
+  },
+  "OperationsConsoleDeploymentAwsCliLayer5FA0FA8F": {
+   "Type": "AWS::Lambda::LayerVersion",
+   "Properties": {
+    "Content": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "0cfdecad2260a3a84ad0c2d08a77e03c9d25e26c7b52f26b1e1faf97aef92f18.zip"
+    },
+    "Description": "/opt/awscli/aws"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleDeployment/AwsCliLayer/Resource",
+    "aws:asset:path": "asset.0cfdecad2260a3a84ad0c2d08a77e03c9d25e26c7b52f26b1e1faf97aef92f18.zip",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Content"
+   }
+  },
+  "OperationsConsoleDeploymentCustomResource7314077F": {
+   "Type": "Custom::CDKBucketDeployment",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536",
+      "Arn"
+     ]
+    },
+    "SourceBucketNames": [
+     "cdk-hnb659fds-assets-593688888943-us-east-1"
+    ],
+    "SourceObjectKeys": [
+     "58b63df3859a90bfd998e39856faa901fc0ba68afc18a26ff3bf5866a3bccfac.zip"
+    ],
+    "DestinationBucketName": {
+     "Ref": "OperationsConsoleBucketD13072BC"
+    },
+    "WaitForDistributionInvalidation": true,
+    "Prune": true,
+    "DistributionId": {
+     "Ref": "OperationsConsoleDistribution9384F8A9"
+    },
+    "DistributionPaths": [
+     "/*"
+    ],
+    "OutputObjectKeys": true
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleDeployment/CustomResource/Default"
+   }
+  },
+  "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/Resource"
+   }
+  },
+  "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:GetBucket*",
+        "s3:GetObject*",
+        "s3:List*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        "arn:aws:s3:::cdk-hnb659fds-assets-593688888943-us-east-1",
+        "arn:aws:s3:::cdk-hnb659fds-assets-593688888943-us-east-1/*"
+       ]
+      },
+      {
+       "Action": [
+        "s3:Abort*",
+        "s3:DeleteObject*",
+        "s3:GetBucket*",
+        "s3:GetObject*",
+        "s3:List*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ArticleSiteBucketF1B2E614",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::GetAtt": [
+          "OperationsConsoleBucketD13072BC",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ArticleSiteBucketF1B2E614",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "OperationsConsoleBucketD13072BC",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "cloudfront:CreateInvalidation",
+        "cloudfront:GetInvalidation"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF",
+    "Roles": [
+     {
+      "Ref": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "3423a042b818e31c1e34a19d6689ab2e5f9b70fcbe9e71df66f241b20a200bd9.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "AWS_CA_BUNDLE": "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
+     }
+    },
+    "Handler": "index.handler",
+    "Layers": [
+     {
+      "Ref": "OperationsConsoleDeploymentAwsCliLayer5FA0FA8F"
+     }
+    ],
+    "Role": {
+     "Fn::GetAtt": [
+      "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.13",
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF",
+    "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/Resource",
+    "aws:asset:path": "asset.3423a042b818e31c1e34a19d6689ab2e5f9b70fcbe9e71df66f241b20a200bd9",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "OperationsConsoleAliasRecordA4E0EB7E": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::GetAtt": [
+       "OperationsConsoleDistribution9384F8A9",
+       "DomainName"
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::FindInMap": [
+       "AWSCloudFrontPartitionHostedZoneIdMap",
+       {
+        "Ref": "AWS::Partition"
+       },
+       "zoneId"
+      ]
+     }
+    },
+    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
+    "Name": "aicpe.dev.",
+    "Type": "A"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleAliasRecord/Resource"
+   }
+  },
+  "OperationsConsoleAliasRecordIpv6DFDDB8A7": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::GetAtt": [
+       "OperationsConsoleDistribution9384F8A9",
+       "DomainName"
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::FindInMap": [
+       "AWSCloudFrontPartitionHostedZoneIdMap",
+       {
+        "Ref": "AWS::Partition"
+       },
+       "zoneId"
+      ]
+     }
+    },
+    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
+    "Name": "aicpe.dev.",
+    "Type": "AAAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleAliasRecordIpv6/Resource"
+   }
+  },
+  "ArticleSiteBucketF1B2E614": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "PublicAccessBlockConfiguration": {
+     "BlockPublicAcls": true,
+     "BlockPublicPolicy": true,
+     "IgnorePublicAcls": true,
+     "RestrictPublicBuckets": true
+    },
+    "Tags": [
+     {
+      "Key": "aws-cdk:cr-owned:25b284c9",
+      "Value": "true"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteBucket/Resource"
+   }
+  },
+  "ArticleSiteBucketPolicy9036E1D1": {
+   "Type": "AWS::S3::BucketPolicy",
+   "Properties": {
+    "Bucket": {
+     "Ref": "ArticleSiteBucketF1B2E614"
+    },
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "s3:*",
+       "Condition": {
+        "Bool": {
+         "aws:SecureTransport": "false"
+        }
+       },
+       "Effect": "Deny",
+       "Principal": {
+        "AWS": "*"
+       },
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ArticleSiteBucketF1B2E614",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ArticleSiteBucketF1B2E614",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "s3:GetObject",
+       "Condition": {
+        "StringEquals": {
+         "AWS:SourceArn": {
+          "Fn::Join": [
+           "",
+           [
+            "arn:",
+            {
+             "Ref": "AWS::Partition"
+            },
+            ":cloudfront::",
+            {
+             "Ref": "AWS::AccountId"
+            },
+            ":distribution/",
+            {
+             "Ref": "ArticleSiteDistributionBC7D0080"
+            }
+           ]
+          ]
+         }
+        }
+       },
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "cloudfront.amazonaws.com"
+       },
+       "Resource": {
+        "Fn::Join": [
+         "",
+         [
+          {
+           "Fn::GetAtt": [
+            "ArticleSiteBucketF1B2E614",
+            "Arn"
+           ]
+          },
+          "/*"
+         ]
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteBucket/Policy/Resource"
+   }
+  },
+  "ArticleSiteCertificateCertificateRequestorFunctionServiceRole8434EFF1": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorFunction/ServiceRole/Resource"
+   }
+  },
+  "ArticleSiteCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy77BD8365": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "acm:AddTagsToCertificate",
+        "acm:DeleteCertificate",
+        "acm:DescribeCertificate",
+        "acm:RequestCertificate",
+        "route53:GetChange"
+       ],
+       "Effect": "Allow",
+       "Resource": "*"
+      },
+      {
+       "Action": "route53:changeResourceRecordSets",
+       "Condition": {
+        "ForAllValues:StringEquals": {
+         "route53:ChangeResourceRecordSetsRecordTypes": [
+          "CNAME"
+         ],
+         "route53:ChangeResourceRecordSetsActions": [
+          "UPSERT"
+         ]
+        },
+        "ForAllValues:StringLike": {
+         "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+          "*.article.aicpe.dev"
+         ]
+        }
+       },
+       "Effect": "Allow",
+       "Resource": "arn:aws:route53:::hostedzone/Z09581692MGKXVAUBBRRM"
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "ArticleSiteCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy77BD8365",
+    "Roles": [
+     {
+      "Ref": "ArticleSiteCertificateCertificateRequestorFunctionServiceRole8434EFF1"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorFunction/ServiceRole/DefaultPolicy/Resource"
+   }
+  },
+  "ArticleSiteCertificateCertificateRequestorFunction1B9EFF6D": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "b073cebcf4d61fb152a30f5a5e57a94df7f980a549fdf1a79a0b18c5750522d8.zip"
+    },
+    "Handler": "index.certificateRequestHandler",
+    "Role": {
+     "Fn::GetAtt": [
+      "ArticleSiteCertificateCertificateRequestorFunctionServiceRole8434EFF1",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs22.x",
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "ArticleSiteCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy77BD8365",
+    "ArticleSiteCertificateCertificateRequestorFunctionServiceRole8434EFF1"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorFunction/Resource",
+    "aws:asset:path": "asset.b073cebcf4d61fb152a30f5a5e57a94df7f980a549fdf1a79a0b18c5750522d8",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
+  "ArticleSiteCertificateCertificateRequestorResource29689D96": {
+   "Type": "AWS::CloudFormation::CustomResource",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "ArticleSiteCertificateCertificateRequestorFunction1B9EFF6D",
+      "Arn"
+     ]
+    },
+    "DomainName": "article.aicpe.dev",
+    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
+    "Region": "us-east-1"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorResource/Default"
+   }
+  },
+  "ArticleSiteDistributionOrigin1S3OriginAccessControl60C6DCD9": {
+   "Type": "AWS::CloudFront::OriginAccessControl",
+   "Properties": {
+    "OriginAccessControlConfig": {
+     "Name": "CascadePreventionStackArticlOrigin1S3OriginAccessControl3CB7A36B",
+     "OriginAccessControlOriginType": "s3",
+     "SigningBehavior": "always",
+     "SigningProtocol": "sigv4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteDistribution/Origin1/S3OriginAccessControl/Resource"
+   }
+  },
+  "ArticleSiteDistributionBC7D0080": {
+   "Type": "AWS::CloudFront::Distribution",
+   "Properties": {
+    "DistributionConfig": {
+     "Aliases": [
+      "article.aicpe.dev"
+     ],
+     "Comment": "Cascade Prevention Engine article site",
+     "DefaultCacheBehavior": {
+      "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+      "Compress": true,
+      "TargetOriginId": "CascadePreventionStackArticleSiteDistributionOrigin12301A0BB",
+      "ViewerProtocolPolicy": "redirect-to-https"
+     },
+     "DefaultRootObject": "index.html",
+     "Enabled": true,
+     "HttpVersion": "http2",
+     "IPV6Enabled": true,
+     "Origins": [
+      {
+       "DomainName": {
+        "Fn::GetAtt": [
+         "ArticleSiteBucketF1B2E614",
+         "RegionalDomainName"
+        ]
+       },
+       "Id": "CascadePreventionStackArticleSiteDistributionOrigin12301A0BB",
+       "OriginAccessControlId": {
+        "Fn::GetAtt": [
+         "ArticleSiteDistributionOrigin1S3OriginAccessControl60C6DCD9",
+         "Id"
+        ]
+       },
+       "S3OriginConfig": {
+        "OriginAccessIdentity": ""
+       }
+      }
+     ],
+     "ViewerCertificate": {
+      "AcmCertificateArn": {
+       "Fn::GetAtt": [
+        "ArticleSiteCertificateCertificateRequestorResource29689D96",
+        "Arn"
+       ]
+      },
+      "MinimumProtocolVersion": "TLSv1.2_2021",
+      "SslSupportMethod": "sni-only"
+     }
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteDistribution/Resource"
+   }
+  },
+  "ArticleSiteDeploymentAwsCliLayer83719E88": {
+   "Type": "AWS::Lambda::LayerVersion",
+   "Properties": {
+    "Content": {
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "0cfdecad2260a3a84ad0c2d08a77e03c9d25e26c7b52f26b1e1faf97aef92f18.zip"
+    },
+    "Description": "/opt/awscli/aws"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteDeployment/AwsCliLayer/Resource",
+    "aws:asset:path": "asset.0cfdecad2260a3a84ad0c2d08a77e03c9d25e26c7b52f26b1e1faf97aef92f18.zip",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Content"
+   }
+  },
+  "ArticleSiteDeploymentCustomResourceC0FCD903": {
+   "Type": "Custom::CDKBucketDeployment",
+   "Properties": {
+    "ServiceToken": {
+     "Fn::GetAtt": [
+      "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536",
+      "Arn"
+     ]
+    },
+    "SourceBucketNames": [
+     "cdk-hnb659fds-assets-593688888943-us-east-1"
+    ],
+    "SourceObjectKeys": [
+     "5928b1e65b0bb8368d66ee736f3297c235cb12a16493fb93ad23588d96084b62.zip"
+    ],
+    "DestinationBucketName": {
+     "Ref": "ArticleSiteBucketF1B2E614"
+    },
+    "WaitForDistributionInvalidation": true,
+    "Prune": true,
+    "DistributionId": {
+     "Ref": "ArticleSiteDistributionBC7D0080"
+    },
+    "DistributionPaths": [
+     "/*"
+    ],
+    "OutputObjectKeys": true
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteDeployment/CustomResource/Default"
+   }
+  },
+  "ArticleSiteAliasRecordF1C652A8": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::GetAtt": [
+       "ArticleSiteDistributionBC7D0080",
+       "DomainName"
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::FindInMap": [
+       "AWSCloudFrontPartitionHostedZoneIdMap",
+       {
+        "Ref": "AWS::Partition"
+       },
+       "zoneId"
+      ]
+     }
+    },
+    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
+    "Name": "article.aicpe.dev.",
+    "Type": "A"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteAliasRecord/Resource"
+   }
+  },
+  "ArticleSiteAliasRecordIpv61CD0C741": {
+   "Type": "AWS::Route53::RecordSet",
+   "Properties": {
+    "AliasTarget": {
+     "DNSName": {
+      "Fn::GetAtt": [
+       "ArticleSiteDistributionBC7D0080",
+       "DomainName"
+      ]
+     },
+     "HostedZoneId": {
+      "Fn::FindInMap": [
+       "AWSCloudFrontPartitionHostedZoneIdMap",
+       {
+        "Ref": "AWS::Partition"
+       },
+       "zoneId"
+      ]
+     }
+    },
+    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
+    "Name": "article.aicpe.dev.",
+    "Type": "AAAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/ArticleSiteAliasRecordIpv6/Resource"
    }
   },
   "PlaybookMappingsPlaybookMappingsTable6905E937": {
@@ -1338,9 +2374,7 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": {
-      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
-     },
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
      "S3Key": "e35ae991549d83fbe7e4281b68eb396e1b4159bc7a9139e572ca5deb768303a5.zip"
     },
     "Environment": {
@@ -1462,9 +2496,7 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": {
-      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
-     },
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
      "S3Key": "7022f87ad090a32705bd3b3ec5f3860b1ba1a468d89cb1560d20421bf3a65c0a.zip"
     },
     "Environment": {
@@ -1658,10 +2690,8 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": {
-      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
-     },
-     "S3Key": "576bfe9cba07119e9891e6ce6f59a8eeaf412c1f9506e179f7dd1e732a4bd811.zip"
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "a16ea12e9f62cd4385d5623fbc52c039e91ce98b28ec616f0dff9f34239585c6.zip"
     },
     "Environment": {
      "Variables": {
@@ -1699,7 +2729,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "CascadePreventionStack/CascadeApiFunction/Resource",
-    "aws:asset:path": "asset.576bfe9cba07119e9891e6ce6f59a8eeaf412c1f9506e179f7dd1e732a4bd811",
+    "aws:asset:path": "asset.a16ea12e9f62cd4385d5623fbc52c039e91ce98b28ec616f0dff9f34239585c6",
     "aws:asset:is-bundled": true,
     "aws:asset:property": "Code"
    }
@@ -1742,14 +2772,15 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": {
-      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
-     },
-     "S3Key": "290ea70e5b495910d620e3f84585cfa56d631276771d8bca46540aaa5b12d6b5.zip"
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Key": "01455685c9ab33eb684e55e7fa98fec3de446c5dfaf87b49ce41b410e761529a.zip"
     },
     "Environment": {
      "Variables": {
       "WEBHOOK_URL": "",
+      "SLACK_WEBHOOK_URL": "",
+      "TEAMS_WEBHOOK_URL": "",
+      "STATUSPAGE_WEBHOOK_URL": "",
       "WEBHOOK_ENABLED": "false"
      }
     },
@@ -1769,7 +2800,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "CascadePreventionStack/WebhookNotifierFunction/Resource",
-    "aws:asset:path": "asset.290ea70e5b495910d620e3f84585cfa56d631276771d8bca46540aaa5b12d6b5",
+    "aws:asset:path": "asset.01455685c9ab33eb684e55e7fa98fec3de446c5dfaf87b49ce41b410e761529a",
     "aws:asset:is-bundled": true,
     "aws:asset:property": "Code"
    }
@@ -1841,9 +2872,7 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": {
-      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
-     },
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
      "S3Key": "e102dcf55b0f6da1767537ed867d42b045311f828d79ce0245744864381cc537.zip"
     },
     "Environment": {
@@ -2074,9 +3103,7 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": {
-      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
-     },
+     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
      "S3Key": "6fc514043ce6042d5247923db736014739074d33feb581816dfa984599252f11.zip"
     },
     "Environment": {
@@ -2234,7 +3261,7 @@
     "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Resource"
    }
   },
-  "CascadePreventionApiDeploymentF8AFB8859feef5796f9c93e354a72aa0b126bbea": {
+  "CascadePreventionApiDeploymentF8AFB88511edcbe92d147bf83bef851bfda9db8f": {
    "Type": "AWS::ApiGateway::Deployment",
    "Properties": {
     "Description": "MVP API for cascade prevention telemetry and operator interfaces",
@@ -2245,17 +3272,26 @@
    "DependsOn": [
     "CascadeApiAuthorizer7D8F1806",
     "CascadePreventionApicascadesignaturesactiveGET45B32327",
+    "CascadePreventionApicascadesignaturesactiveOPTIONS09693B3B",
     "CascadePreventionApicascadesignaturesactive777A573D",
+    "CascadePreventionApicascadesignaturesOPTIONS285F399E",
     "CascadePreventionApicascadesignaturesA85009AF",
     "CascadePreventionApidependencygraphGET2E9AD7F1",
+    "CascadePreventionApidependencygraphOPTIONS79088A9A",
     "CascadePreventionApidependencygraph47388B31",
+    "CascadePreventionApiOPTIONS6C26B874",
+    "CascadePreventionApiremediationplansplanIdapprovalOPTIONSFCA7D10B",
     "CascadePreventionApiremediationplansplanIdapprovalPOSTF97A3654",
     "CascadePreventionApiremediationplansplanIdapprovalE74C4FA1",
+    "CascadePreventionApiremediationplansplanIdOPTIONSC85E24D6",
     "CascadePreventionApiremediationplansplanIdF622C81E",
     "CascadePreventionApiremediationplansGET9F00FD5A",
+    "CascadePreventionApiremediationplansOPTIONSDBBEFEC6",
     "CascadePreventionApiremediationplansE9F163CB",
+    "CascadePreventionApitelemetryingestOPTIONS93E589B6",
     "CascadePreventionApitelemetryingestPOST774CCC31",
     "CascadePreventionApitelemetryingest245E4A33",
+    "CascadePreventionApitelemetryOPTIONS802B7DED",
     "CascadePreventionApitelemetryF4536F37"
    ],
    "Metadata": {
@@ -2267,7 +3303,7 @@
    "Type": "AWS::ApiGateway::Stage",
    "Properties": {
     "DeploymentId": {
-     "Ref": "CascadePreventionApiDeploymentF8AFB8859feef5796f9c93e354a72aa0b126bbea"
+     "Ref": "CascadePreventionApiDeploymentF8AFB88511edcbe92d147bf83bef851bfda9db8f"
     },
     "RestApiId": {
      "Ref": "CascadePreventionApiC1B264F4"
@@ -2276,6 +3312,52 @@
    },
    "Metadata": {
     "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/DeploymentStage.v1/Resource"
+   }
+  },
+  "CascadePreventionApiOPTIONS6C26B874": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Fn::GetAtt": [
+      "CascadePreventionApiC1B264F4",
+      "RootResourceId"
+     ]
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/OPTIONS/Resource"
    }
   },
   "CascadePreventionApitelemetryF4536F37": {
@@ -2296,6 +3378,49 @@
     "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/telemetry/Resource"
    }
   },
+  "CascadePreventionApitelemetryOPTIONS802B7DED": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApitelemetryF4536F37"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/telemetry/OPTIONS/Resource"
+   }
+  },
   "CascadePreventionApitelemetryingest245E4A33": {
    "Type": "AWS::ApiGateway::Resource",
    "Properties": {
@@ -2309,6 +3434,49 @@
    },
    "Metadata": {
     "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/telemetry/ingest/Resource"
+   }
+  },
+  "CascadePreventionApitelemetryingestOPTIONS93E589B6": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApitelemetryingest245E4A33"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/telemetry/ingest/OPTIONS/Resource"
    }
   },
   "CascadePreventionApitelemetryingestPOSTApiPermissionCascadePreventionStackCascadePreventionApiACAC9F72POSTtelemetryingestDA987E99": {
@@ -2326,19 +3494,7 @@
      "Fn::Join": [
       "",
       [
-       "arn:",
-       {
-        "Ref": "AWS::Partition"
-       },
-       ":execute-api:",
-       {
-        "Ref": "AWS::Region"
-       },
-       ":",
-       {
-        "Ref": "AWS::AccountId"
-       },
-       ":",
+       "arn:aws:execute-api:us-east-1:593688888943:",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -2370,19 +3526,7 @@
      "Fn::Join": [
       "",
       [
-       "arn:",
-       {
-        "Ref": "AWS::Partition"
-       },
-       ":execute-api:",
-       {
-        "Ref": "AWS::Region"
-       },
-       ":",
-       {
-        "Ref": "AWS::AccountId"
-       },
-       ":",
+       "arn:aws:execute-api:us-east-1:593688888943:",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -2407,15 +3551,7 @@
       "Fn::Join": [
        "",
        [
-        "arn:",
-        {
-         "Ref": "AWS::Partition"
-        },
-        ":apigateway:",
-        {
-         "Ref": "AWS::Region"
-        },
-        ":lambda:path/2015-03-31/functions/",
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
           "TelemetryIngestFunction64DF56ED",
@@ -2456,6 +3592,49 @@
     "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/dependency-graph/Resource"
    }
   },
+  "CascadePreventionApidependencygraphOPTIONS79088A9A": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApidependencygraph47388B31"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/dependency-graph/OPTIONS/Resource"
+   }
+  },
   "CascadePreventionApidependencygraphGETApiPermissionCascadePreventionStackCascadePreventionApiACAC9F72GETdependencygraph38180E3A": {
    "Type": "AWS::Lambda::Permission",
    "Properties": {
@@ -2471,19 +3650,7 @@
      "Fn::Join": [
       "",
       [
-       "arn:",
-       {
-        "Ref": "AWS::Partition"
-       },
-       ":execute-api:",
-       {
-        "Ref": "AWS::Region"
-       },
-       ":",
-       {
-        "Ref": "AWS::AccountId"
-       },
-       ":",
+       "arn:aws:execute-api:us-east-1:593688888943:",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -2515,19 +3682,7 @@
      "Fn::Join": [
       "",
       [
-       "arn:",
-       {
-        "Ref": "AWS::Partition"
-       },
-       ":execute-api:",
-       {
-        "Ref": "AWS::Region"
-       },
-       ":",
-       {
-        "Ref": "AWS::AccountId"
-       },
-       ":",
+       "arn:aws:execute-api:us-east-1:593688888943:",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -2556,15 +3711,7 @@
       "Fn::Join": [
        "",
        [
-        "arn:",
-        {
-         "Ref": "AWS::Partition"
-        },
-        ":apigateway:",
-        {
-         "Ref": "AWS::Region"
-        },
-        ":lambda:path/2015-03-31/functions/",
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
           "CascadeApiFunctionA3D6FDC5",
@@ -2605,6 +3752,49 @@
     "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/Resource"
    }
   },
+  "CascadePreventionApicascadesignaturesOPTIONS285F399E": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApicascadesignaturesA85009AF"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/OPTIONS/Resource"
+   }
+  },
   "CascadePreventionApicascadesignaturesactive777A573D": {
    "Type": "AWS::ApiGateway::Resource",
    "Properties": {
@@ -2618,6 +3808,49 @@
    },
    "Metadata": {
     "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/active/Resource"
+   }
+  },
+  "CascadePreventionApicascadesignaturesactiveOPTIONS09693B3B": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApicascadesignaturesactive777A573D"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/cascade-signatures/active/OPTIONS/Resource"
    }
   },
   "CascadePreventionApicascadesignaturesactiveGETApiPermissionCascadePreventionStackCascadePreventionApiACAC9F72GETcascadesignaturesactive356B7785": {
@@ -2635,19 +3868,7 @@
      "Fn::Join": [
       "",
       [
-       "arn:",
-       {
-        "Ref": "AWS::Partition"
-       },
-       ":execute-api:",
-       {
-        "Ref": "AWS::Region"
-       },
-       ":",
-       {
-        "Ref": "AWS::AccountId"
-       },
-       ":",
+       "arn:aws:execute-api:us-east-1:593688888943:",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -2679,19 +3900,7 @@
      "Fn::Join": [
       "",
       [
-       "arn:",
-       {
-        "Ref": "AWS::Partition"
-       },
-       ":execute-api:",
-       {
-        "Ref": "AWS::Region"
-       },
-       ":",
-       {
-        "Ref": "AWS::AccountId"
-       },
-       ":",
+       "arn:aws:execute-api:us-east-1:593688888943:",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -2720,15 +3929,7 @@
       "Fn::Join": [
        "",
        [
-        "arn:",
-        {
-         "Ref": "AWS::Partition"
-        },
-        ":apigateway:",
-        {
-         "Ref": "AWS::Region"
-        },
-        ":lambda:path/2015-03-31/functions/",
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
           "CascadeApiFunctionA3D6FDC5",
@@ -2769,6 +3970,49 @@
     "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/Resource"
    }
   },
+  "CascadePreventionApiremediationplansOPTIONSDBBEFEC6": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApiremediationplansE9F163CB"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/OPTIONS/Resource"
+   }
+  },
   "CascadePreventionApiremediationplansGETApiPermissionCascadePreventionStackCascadePreventionApiACAC9F72GETremediationplansADC02F7D": {
    "Type": "AWS::Lambda::Permission",
    "Properties": {
@@ -2784,19 +4028,7 @@
      "Fn::Join": [
       "",
       [
-       "arn:",
-       {
-        "Ref": "AWS::Partition"
-       },
-       ":execute-api:",
-       {
-        "Ref": "AWS::Region"
-       },
-       ":",
-       {
-        "Ref": "AWS::AccountId"
-       },
-       ":",
+       "arn:aws:execute-api:us-east-1:593688888943:",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -2828,19 +4060,7 @@
      "Fn::Join": [
       "",
       [
-       "arn:",
-       {
-        "Ref": "AWS::Partition"
-       },
-       ":execute-api:",
-       {
-        "Ref": "AWS::Region"
-       },
-       ":",
-       {
-        "Ref": "AWS::AccountId"
-       },
-       ":",
+       "arn:aws:execute-api:us-east-1:593688888943:",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -2869,15 +4089,7 @@
       "Fn::Join": [
        "",
        [
-        "arn:",
-        {
-         "Ref": "AWS::Partition"
-        },
-        ":apigateway:",
-        {
-         "Ref": "AWS::Region"
-        },
-        ":lambda:path/2015-03-31/functions/",
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
           "CascadeApiFunctionA3D6FDC5",
@@ -2915,6 +4127,49 @@
     "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/Resource"
    }
   },
+  "CascadePreventionApiremediationplansplanIdOPTIONSC85E24D6": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApiremediationplansplanIdF622C81E"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/OPTIONS/Resource"
+   }
+  },
   "CascadePreventionApiremediationplansplanIdapprovalE74C4FA1": {
    "Type": "AWS::ApiGateway::Resource",
    "Properties": {
@@ -2928,6 +4183,49 @@
    },
    "Metadata": {
     "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/approval/Resource"
+   }
+  },
+  "CascadePreventionApiremediationplansplanIdapprovalOPTIONSFCA7D10B": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "CascadePreventionApiremediationplansplanIdapprovalE74C4FA1"
+    },
+    "RestApiId": {
+     "Ref": "CascadePreventionApiC1B264F4"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Default/remediation-plans/{planId}/approval/OPTIONS/Resource"
    }
   },
   "CascadePreventionApiremediationplansplanIdapprovalPOSTApiPermissionCascadePreventionStackCascadePreventionApiACAC9F72POSTremediationplansplanIdapprovalB6278D47": {
@@ -2945,19 +4243,7 @@
      "Fn::Join": [
       "",
       [
-       "arn:",
-       {
-        "Ref": "AWS::Partition"
-       },
-       ":execute-api:",
-       {
-        "Ref": "AWS::Region"
-       },
-       ":",
-       {
-        "Ref": "AWS::AccountId"
-       },
-       ":",
+       "arn:aws:execute-api:us-east-1:593688888943:",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -2989,19 +4275,7 @@
      "Fn::Join": [
       "",
       [
-       "arn:",
-       {
-        "Ref": "AWS::Partition"
-       },
-       ":execute-api:",
-       {
-        "Ref": "AWS::Region"
-       },
-       ":",
-       {
-        "Ref": "AWS::AccountId"
-       },
-       ":",
+       "arn:aws:execute-api:us-east-1:593688888943:",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -3030,15 +4304,7 @@
       "Fn::Join": [
        "",
        [
-        "arn:",
-        {
-         "Ref": "AWS::Partition"
-        },
-        ":apigateway:",
-        {
-         "Ref": "AWS::Region"
-        },
-        ":lambda:path/2015-03-31/functions/",
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
           "CascadeApiFunctionA3D6FDC5",
@@ -3432,6 +4698,38 @@
     "Name": "CascadePrevention-SignaturesTable"
    }
   },
+  "OperationsConsoleBucketName": {
+   "Value": {
+    "Ref": "OperationsConsoleBucketD13072BC"
+   }
+  },
+  "OperationsConsoleCloudFrontDomain": {
+   "Value": {
+    "Fn::GetAtt": [
+     "OperationsConsoleDistribution9384F8A9",
+     "DomainName"
+    ]
+   }
+  },
+  "OperationsConsoleUrl": {
+   "Value": "https://aicpe.dev"
+  },
+  "ArticleSiteBucketName": {
+   "Value": {
+    "Ref": "ArticleSiteBucketF1B2E614"
+   }
+  },
+  "ArticleSiteCloudFrontDomain": {
+   "Value": {
+    "Fn::GetAtt": [
+     "ArticleSiteDistributionBC7D0080",
+     "DomainName"
+    ]
+   }
+  },
+  "ArticleSiteUrl": {
+   "Value": "https://article.aicpe.dev"
+  },
   "CascadePreventionApiEndpoint7176775B": {
    "Value": {
     "Fn::Join": [
@@ -3441,11 +4739,7 @@
       {
        "Ref": "CascadePreventionApiC1B264F4"
       },
-      ".execute-api.",
-      {
-       "Ref": "AWS::Region"
-      },
-      ".",
+      ".execute-api.us-east-1.",
       {
        "Ref": "AWS::URLSuffix"
       },
@@ -3471,6 +4765,38 @@
   "CascadeOperatorApiKeyId": {
    "Value": {
     "Ref": "CascadePreventionApiCascadeOperatorApiKey236D4D80"
+   }
+  },
+  "CascadePreventionApiUrl": {
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Ref": "CascadePreventionApiC1B264F4"
+      },
+      ".execute-api.us-east-1.",
+      {
+       "Ref": "AWS::URLSuffix"
+      },
+      "/",
+      {
+       "Ref": "CascadePreventionApiDeploymentStagev1C2FEFAF6"
+      },
+      "/"
+     ]
+    ]
+   }
+  }
+ },
+ "Mappings": {
+  "AWSCloudFrontPartitionHostedZoneIdMap": {
+   "aws": {
+    "zoneId": "Z2FDTNDATAQYW2"
+   },
+   "aws-cn": {
+    "zoneId": "Z3RFFRIM2A3IF5"
    }
   }
  },

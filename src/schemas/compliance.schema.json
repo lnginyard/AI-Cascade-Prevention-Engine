@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ComplianceTelemetry",
+  "description": "Regulatory, legal, and compliance health metrics",
+  "type": "object",
+  "properties": {
+    "source": { "const": "compliance" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "complianceFrameworkId": { "type": "string" },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "auditReadinessPct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "dataResidenceCompliancePct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "slaBreachRiskScore": { "type": "number", "minimum": 0, "maximum": 100 },
+        "certificationCurrentPct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "incidentReportingTimelinesMet": { "type": "number", "minimum": 0, "maximum": 100 },
+        "openAuditFindingsCritical": { "type": "integer", "minimum": 0 },
+        "openAuditFindingsHigh": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["auditReadinessPct"]
+    }
+  },
+  "required": ["source", "timestamp", "complianceFrameworkId", "metrics"]
+}

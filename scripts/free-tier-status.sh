@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export AWS_PAGER=""
 
 PROFILE="${1:-cascade-free-tier}"
 REGION="${2:-us-east-1}"
@@ -41,6 +42,27 @@ AWS_PROFILE="$PROFILE" AWS_REGION="$REGION" aws cloudformation describe-stacks \
   --stack-name "$STACK_NAME" \
   --query 'Stacks[0].Outputs' \
   --output table || true
+
+OPERATIONS_URL=$(AWS_PROFILE="$PROFILE" AWS_REGION="$REGION" aws cloudformation describe-stacks \
+  --stack-name "$STACK_NAME" \
+  --query "Stacks[0].Outputs[?OutputKey=='OperationsConsoleUrl'].OutputValue | [0]" \
+  --output text)
+
+ARTICLE_URL=$(AWS_PROFILE="$PROFILE" AWS_REGION="$REGION" aws cloudformation describe-stacks \
+  --stack-name "$STACK_NAME" \
+  --query "Stacks[0].Outputs[?OutputKey=='ArticleSiteUrl'].OutputValue | [0]" \
+  --output text)
+
+echo
+echo "== Site URLs =="
+echo "Operations Console: $OPERATIONS_URL"
+echo "Article Site: $ARTICLE_URL"
+
+if [[ "$OPERATIONS_URL" == *"cloudfront.net"* || "$ARTICLE_URL" == *"cloudfront.net"* ]]; then
+  echo ""
+  echo "Custom domain note: stack is currently using CloudFront URLs."
+  echo "To use aicpe.dev/article.aicpe.dev, create Route53 hosted zone aicpe.dev in this AWS account and redeploy."
+fi
 
 echo
 echo "== API Discovery =="

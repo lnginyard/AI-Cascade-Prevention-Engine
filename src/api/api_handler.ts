@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { handleAiChat } from './ai_chat_handler';
 
 const region = process.env.AWS_REGION || 'us-east-1';
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({ region }));
@@ -132,6 +133,7 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
   if (method === 'POST' && /^\/remediation-plans\/[^/]+\/approval$/.test(path)) {
     return approveRemediationPlan(event);
   }
+  if (method === 'POST' && path === '/ai-copilot/chat') return handleAiChat(event);
 
   return json(404, { message: 'Route not found' });
 }

@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FinancialTelemetry",
+  "description": "Financial health, revenue sensitivity, and economic metrics",
+  "type": "object",
+  "properties": {
+    "source": { "const": "financial" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "businessUnitId": { "type": "string" },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "revenuePctOfForecast": { "type": "number", "minimum": 0, "maximum": 200 },
+        "marginPctOfTarget": { "type": "number", "minimum": 0, "maximum": 200 },
+        "workingCapitalDaysPctOfNorm": { "type": "number", "minimum": 0, "maximum": 200 },
+        "customerAcquisitionCostPctOfTarget": { "type": "number", "minimum": 0, "maximum": 200 },
+        "cashConversionCycleDays": { "type": "number", "minimum": 0 },
+        "delinquentReceivablesPct": { "type": "number", "minimum": 0, "maximum": 100 },
+        "costOfDisruptionPerHour": { "type": "number", "minimum": 0 }
+      },
+      "required": ["revenuePctOfForecast"]
+    }
+  },
+  "required": ["source", "timestamp", "businessUnitId", "metrics"]
+}

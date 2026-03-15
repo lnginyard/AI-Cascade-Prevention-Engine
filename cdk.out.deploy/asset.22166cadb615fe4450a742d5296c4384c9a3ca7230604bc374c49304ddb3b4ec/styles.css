@@ -1,0 +1,142 @@
+:root {
+  color-scheme: light;
+  --bg: #f3efe5;
+  --ink: #13212d;
+  --muted: #566473;
+  --panel: rgba(255, 251, 245, 0.88);
+  --line: rgba(19, 33, 45, 0.14);
+  --accent: #0f766e;
+  --accent-soft: rgba(15, 118, 110, 0.12);
+  --shadow: 0 24px 70px rgba(19, 33, 45, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'IBM Plex Sans', sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(180, 83, 9, 0.12), transparent 24%),
+    linear-gradient(180deg, #fcfaf5 0%, var(--bg) 100%);
+}
+
+a {
+  color: var(--accent);
+}
+
+.page-shell {
+  width: min(1040px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0 80px;
+}
+
+.hero {
+  padding: 72px 0 32px;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.78rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.hero h1 {
+  margin: 0;
+  max-width: 12ch;
+  font-family: 'IBM Plex Serif', serif;
+  font-size: clamp(2.8rem, 6vw, 5.2rem);
+  line-height: 0.96;
+}
+
+.subtitle {
+  max-width: 720px;
+  margin: 20px 0 0;
+  font-size: 1.15rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.hero-meta span {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  font-size: 0.92rem;
+}
+
+.content {
+  display: grid;
+}
+
+.article-card {
+  padding: 36px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.article-card p,
+.article-card li {
+  font-size: 1.02rem;
+  line-height: 1.8;
+  color: var(--ink);
+}
+
+.article-card h2 {
+  margin-top: 32px;
+  margin-bottom: 14px;
+  font-family: 'IBM Plex Serif', serif;
+  font-size: 1.8rem;
+}
+
+.article-card ol {
+  padding-left: 20px;
+}
+
+.article-card pre {
+  overflow-x: auto;
+  padding: 18px;
+  border-radius: 18px;
+  background: #13212d;
+  color: #eff6ff;
+}
+
+.callout {
+  margin-top: 32px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: var(--accent-soft);
+  border: 1px solid rgba(15, 118, 110, 0.22);
+}
+
+@media (max-width: 720px) {
+  .page-shell {
+    width: min(100% - 20px, 1040px);
+    padding-top: 24px;
+  }
+
+  .hero {
+    padding-top: 40px;
+  }
+
+  .article-card {
+    padding: 24px;
+  }
+}

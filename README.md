@@ -19,20 +19,24 @@ The system uses TypeScript with AWS CDK for infrastructure as code and consists 
 ## Infrastructure Components
 
 ### DynamoDB Tables
+
 - **DependencyGraph**: Stores service nodes and dependency edges with metrics
 - **TelemetryCache**: Recent telemetry events with TTL for fast access
 - **CircuitBreakerState**: Circuit breaker states for all services
 
 ### S3 Buckets
+
 - **TelemetryBucket**: Raw telemetry storage with 365-day retention
   - Lifecycle: Standard → Intelligent-Tiering after 30 days
 - **SnapshotBucket**: Dependency graph snapshots every 5 minutes (90-day retention)
 
 ### EventBridge
+
 - **EventBus**: Central event bus for cascade prevention events
 - **Archive**: 90-day event archive for analysis
 
 ### Security
+
 - **KMS Encryption**: Customer-managed keys for all data at rest
 - **IAM Roles**: Least-privilege access policies
 - **Encryption in Transit**: TLS 1.2+ for all communications
@@ -40,6 +44,7 @@ The system uses TypeScript with AWS CDK for infrastructure as code and consists 
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - AWS CLI configured with appropriate credentials
 - AWS CDK CLI installed (`npm install -g aws-cdk`)
@@ -132,6 +137,21 @@ npm run free-tier:guardrails -- cascade-free-tier us-east-1 10 you@example.com
 npm run free-tier:deploy -- cascade-free-tier us-east-1
 ```
 
+By default, free-tier deploy now applies custom domain context for:
+
+- UI: `aicpe.dev`
+- Article: `article.aicpe.dev`
+- Hosted zone: `aicpe.dev`
+
+Override these values for a one-off deploy:
+
+```bash
+UI_DOMAIN_NAME=ops.yourdomain.com \
+ARTICLE_DOMAIN_NAME=article.yourdomain.com \
+HOSTED_ZONE_DOMAIN=yourdomain.com \
+npm run free-tier:deploy -- cascade-free-tier us-east-1
+```
+
 To avoid idle cost when not using the stack:
 
 ```bash
@@ -151,22 +171,26 @@ npm run free-tier:status -- cascade-free-tier us-east-1 <api-key> <bearer-token>
 ## Core Types
 
 ### Telemetry Events
+
 - `TelemetryEvent`: Base event structure with source, type, and payload
 - `MetricPayload`: CloudWatch metrics
 - `TracePayload`: X-Ray traces
 - `ApiCallPayload`: CloudTrail API calls
 
 ### Dependency Graph
+
 - `ServiceNode`: Service representation with metadata
 - `DependencyEdge`: Relationships with call metrics
 - `DependencyHealthScore`: Aggregated health metrics
 
 ### Cascade Detection
+
 - `CascadeSignature`: Detected failure patterns
 - `CascadePrediction`: Predicted propagation paths
 - `AnomalyDetection`: Behavioral deviations
 
 ### Remediation
+
 - `RemediationPlan`: Ordered preventive actions
 - `PreventiveAction`: Individual actions (circuit break, traffic shift, etc.)
 - `CircuitBreakerState`: Circuit breaker status
@@ -174,21 +198,25 @@ npm run free-tier:status -- cascade-free-tier us-east-1 <api-key> <bearer-token>
 ## Development
 
 ### Build
+
 ```bash
 npm run build
 ```
 
 ### Watch Mode
+
 ```bash
 npm run watch
 ```
 
 ### Run Tests
+
 ```bash
 npm test
 ```
 
 ### Synthesize CloudFormation
+
 ```bash
 npm run synth
 ```
@@ -209,6 +237,59 @@ python3 -m http.server 8080
 ```
 
 Then open `http://localhost:8080` in a browser.
+
+### Static Hosting And Custom Domains
+
+The CDK stack now provisions two static CloudFront sites backed by private S3 buckets:
+
+### External Warning Channels (Business + Users)
+
+The stack can now fan out warnings to four external channels for people without console access:
+
+- Executive + stakeholder email alerts (SNS email subscriptions)
+- Stakeholder SMS alerts (SNS SMS subscriptions)
+- Slack incident notifications (incoming webhook)
+- Microsoft Teams incident notifications (incoming webhook)
+- Customer/status page webhook updates (generic status endpoint)
+
+Configure via CDK context values:
+
+```bash
+npx cdk deploy \
+  --context executiveEmails="cto@example.com,ciso@example.com" \
+  --context stakeholderEmails="ops@example.com,support@example.com" \
+  --context stakeholderSms="+15551234567,+15557654321" \
+  --context slackWebhookUrl="https://hooks.slack.com/services/XXX/YYY/ZZZ" \
+  --context teamsWebhookUrl="https://outlook.office.com/webhook/..." \
+  --context statuspageWebhookUrl="https://status.example.com/api/incidents" \
+  --context webhookUrl="https://your-generic-webhook-endpoint"
+```
+
+Notes:
+
+- `webhookUrl` remains the generic integration payload endpoint.
+- Slack/Teams/Statuspage URLs are optional and independent.
+- SMS delivery requires SNS SMS enabled in your AWS account/region and can incur telecom charges.
+
+- Operations console: deploys the contents of `ui/`
+- Article site: deploys the contents of `article/`
+
+If you do not provide custom domain context, CDK will output CloudFront URLs for both sites.
+If you want branded domains, set CDK context values before deployment:
+
+```bash
+cdk deploy \
+  --context uiDomainName=aicpe.dev \
+  --context uiHostedZoneDomain=aicpe.dev \
+  --context articleDomainName=article.aicpe.dev \
+  --context articleHostedZoneDomain=aicpe.dev
+```
+
+Notes:
+
+- Hosted zones must exist in Route53 for automatic certificate validation and DNS records.
+- The stack creates ACM certificates in `us-east-1`, which CloudFront requires.
+- After deployment, use the `OperationsConsoleUrl` and `ArticleSiteUrl` stack outputs.
 
 ### Demo Simulator
 
@@ -244,7 +325,7 @@ npm run deploy
 
 ## Submission
 
-**Deadline: March 12, 2026**
+### Deadline: March 12, 2026
 
 - Full submission package: `SUBMISSION.md`
 - Blog article (ready to publish): `SUBMISSION_BLOG.md`
