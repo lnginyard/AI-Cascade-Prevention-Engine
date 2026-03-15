@@ -98,6 +98,7 @@ Functional requirements are normative and map to `requirements.md` Req IDs.
 ### FR-05 Remediation Planning and Execution (Req 6-12)
 
 1. The system shall generate remediation plans within 10 seconds of blast-radius identification.
+2. The system shall provide artificial intelligence agents to suggest the best solutions for remediation and options to take to help perform in order to avoid interruptions within their business, operations, services, technology and logistics.
 2. The system shall include rollback steps and impact estimates for each action.
 3. The system shall support manual approval workflows where configured.
 4. The system shall execute multi-step plans via Step Functions with retries, rollback-on-failure, and status events.
@@ -146,9 +147,9 @@ Functional requirements are normative and map to `requirements.md` Req IDs.
 ### FR-12 Alerting and Observability (Req 18-19)
 
 1. The system shall alert on high-confidence signatures and unresolved remediation outcomes.
-2. The system shall suppress duplicate alerts and include actionable context.
+2. The system shall suppress duplicate alerts and include actionable context via AI.
 3. The system shall publish operational KPIs (MTTD, MTTR, detection quality, prevention success).
-4. The system shall produce structured logs and dashboards for operations.
+4. The system shall produce structured logs and dashboards for operations using AI.
 
 ### FR-13 Configuration and Simulation (Req 20-21)
 

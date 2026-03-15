@@ -108,7 +108,7 @@ export async function routeEvent(ev: TelemetryEvent): Promise<IngestResult> {
   const normalized: TelemetryEvent = {
     ...ev,
     timestamp: new Date(ev.timestamp).toISOString(),
-    region: ev.region || 'unknown'
+    region: ev.region || 'us-west-2'
   };
 
   const region = process.env.AWS_REGION || 'us-east-1';
@@ -182,7 +182,7 @@ export async function routeEvent(ev: TelemetryEvent): Promise<IngestResult> {
 }
 
 // Example usage (uncomment when running in a Node environment):
-/*
+
 (async () => {
   const evt: TelemetryEvent = {
     source: 'health',
@@ -195,4 +195,4 @@ export async function routeEvent(ev: TelemetryEvent): Promise<IngestResult> {
   const res = await routeEvent(evt);
   console.log('result', res);
 })();
-*/
+
