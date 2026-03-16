@@ -68,56 +68,6 @@ body[data-text-size='xlarge'] { font-size: 21px; }
   left: 12px;
 }
 
-.a11y-toolbar {
-  position: fixed;
-  top: 14px;
-  right: 14px;
-  z-index: 10000;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(110px, auto));
-  gap: 8px;
-  align-items: end;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid #ffffff33;
-  background: #071428e6;
-  -webkit-backdrop-filter: blur(12px) saturate(1.15);
-  backdrop-filter: blur(12px) saturate(1.15);
-  box-shadow: 0 10px 32px #0006;
-}
-
-.a11y-control {
-  display: grid;
-  gap: 4px;
-}
-
-.a11y-control label {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 1.3px;
-  text-transform: uppercase;
-  color: #9cc3de;
-}
-
-.a11y-control select,
-.a11y-control button {
-  border: 1px solid #3c5d88;
-  border-radius: 6px;
-  padding: 8px;
-  min-height: 38px;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  color: #e7f4ff;
-  background: #0c223ee0;
-}
-
-.a11y-control button[aria-pressed='true'] {
-  background: #0f2d52;
-  border-color: #72c9ff;
-}
-
-.a11y-control select:focus-visible,
-.a11y-control button:focus-visible,
 a:focus-visible,
 button:focus-visible {
   outline: 2px solid var(--accent);
@@ -793,15 +743,6 @@ body.reduced-motion *::after {
 }
 
 @media (max-width: 760px) {
-  .a11y-toolbar {
-    top: auto;
-    bottom: 10px;
-    right: 10px;
-    left: 10px;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    padding: 10px;
-  }
   .hero {
     min-height: 520px;
   }
@@ -829,27 +770,6 @@ body.reduced-motion *::after {
 </head>
 <body>
 <a class="skip-link" href="#articleMain">Skip to main content</a>
-<div class="a11y-toolbar" role="region" aria-label="Accessibility settings">
-  <div class="a11y-control">
-    <label for="articleTextSize">Text Size</label>
-    <select id="articleTextSize" aria-label="Adjust article text size">
-      <option value="normal" selected>Normal</option>
-      <option value="large">Large</option>
-      <option value="xlarge">Extra Large</option>
-    </select>
-  </div>
-  <div class="a11y-control">
-    <label for="articleContrast">Contrast</label>
-    <select id="articleContrast" aria-label="Adjust article contrast mode">
-      <option value="standard" selected>Standard</option>
-      <option value="high">High Contrast</option>
-    </select>
-  </div>
-  <div class="a11y-control">
-    <label for="articleMotionToggle">Motion</label>
-    <button id="articleMotionToggle" type="button" aria-pressed="false">Reduce Motion: Off</button>
-  </div>
-</div>
 
 <!-- ══════════════════════════════════════════ HERO ══ -->
 <section class="hero">
@@ -2143,51 +2063,6 @@ function labelY(ctx, max, steps, x, y, h, color='#9aa3bb', suffix=''){
     const lines=s.label.split('\n');
     ctx.fillStyle=s.color+'cc'; ctx.font="9px 'IBM Plex Mono'"; ctx.textAlign='center';
     lines.forEach((l,i)=> ctx.fillText(l, x, y+(i-.3)*12));
-  });
-})();
-
-// ── ACCESSIBILITY SETTINGS ──
-(function(){
-  const textSizeControl = document.getElementById('articleTextSize');
-  const contrastControl = document.getElementById('articleContrast');
-  const motionToggle = document.getElementById('articleMotionToggle');
-
-  const savedTextSize = localStorage.getItem('article-text-size') || 'normal';
-  const savedContrast = localStorage.getItem('article-contrast') || 'standard';
-  const savedMotion = localStorage.getItem('article-motion') || 'normal';
-
-  function applyTextSize(size) {
-    const value = ['normal', 'large', 'xlarge'].includes(size) ? size : 'normal';
-    document.body.setAttribute('data-text-size', value);
-    localStorage.setItem('article-text-size', value);
-  }
-
-  function applyContrast(mode) {
-    const value = mode === 'high' ? 'high' : 'standard';
-    document.body.setAttribute('data-contrast', value);
-    localStorage.setItem('article-contrast', value);
-  }
-
-  function applyMotion(mode) {
-    const reduced = mode === 'reduced';
-    document.body.classList.toggle('reduced-motion', reduced);
-    motionToggle.setAttribute('aria-pressed', reduced ? 'true' : 'false');
-    motionToggle.textContent = `Reduce Motion: ${reduced ? 'On' : 'Off'}`;
-    localStorage.setItem('article-motion', reduced ? 'reduced' : 'normal');
-  }
-
-  textSizeControl.value = savedTextSize;
-  contrastControl.value = savedContrast;
-
-  applyTextSize(savedTextSize);
-  applyContrast(savedContrast);
-  applyMotion(savedMotion);
-
-  textSizeControl.addEventListener('change', (event) => applyTextSize(event.target.value));
-  contrastControl.addEventListener('change', (event) => applyContrast(event.target.value));
-  motionToggle.addEventListener('click', () => {
-    const currentReduced = document.body.classList.contains('reduced-motion');
-    applyMotion(currentReduced ? 'normal' : 'reduced');
   });
 })();
 

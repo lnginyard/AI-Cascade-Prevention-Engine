@@ -129,6 +129,7 @@ let narrationPrimed = false;
 let narrationSupportKnown = false;
 let activeNarrationAudio = null;
 let narrationSessionId = 0;
+let voiceClipPathByKey = new Map();
 let demoRunning = false;
 let liveRefreshTimer = null;
 const LIVE_REFRESH_INTERVAL_MS = 15000;
@@ -141,6 +142,8 @@ let chatSessionId = null;
 let chatMessages = [];
 let chatLoading = false;
 const CHAT_API_PATH = '/ai-copilot/chat';
+
+const DEMO_VOICE_KEYS = ['step1', 'step2', 'step3', 'globe', 'flat', 'list', 'step5', 'step6', 'step7'];
 
 const demoPresets = {
   full: {
@@ -459,6 +462,69 @@ async function ensureNarrationReady() {
 //   1. If `key` is supplied, try to play ui/assets/voice/<key>.mp3  (your own recording)
 //   2. Fall back to Web Speech API TTS with the best available system voice
 
+function getVoiceClipCandidates(key) {
+  return [
+    `./assets/voice/voice/${key}.mp3`,
+    `./assets/voice/voice/${key}.m4a`,
+    `./assets/voice/${key}.mp3`,
+    `./assets/voice/${key}.m4a`,
+  ];
+}
+
+function probeVoiceClip(path, timeoutMs = 4000) {
+  return new Promise((resolve) => {
+    const audio = new Audio(path);
+    audio.preload = 'auto';
+    let settled = false;
+    const timer = setTimeout(() => finish(false), timeoutMs);
+
+    const finish = (ok) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      audio.pause();
+      audio.currentTime = 0;
+      resolve(ok);
+    };
+
+    audio.addEventListener('canplaythrough', () => finish(true), { once: true });
+    audio.addEventListener('canplay', () => finish(true), { once: true });
+    audio.onerror = () => finish(false);
+    audio.load();
+  });
+}
+
+async function ensureVoiceClipPath(key) {
+  const cached = voiceClipPathByKey.get(key);
+  if (cached) return cached;
+
+  const candidates = getVoiceClipCandidates(key);
+  for (const path of candidates) {
+    const ok = await probeVoiceClip(path);
+    if (ok) {
+      voiceClipPathByKey.set(key, path);
+      return path;
+    }
+  }
+  return null;
+}
+
+async function ensureDemoVoicePackReady() {
+  const missing = [];
+  for (const key of DEMO_VOICE_KEYS) {
+    const resolved = await ensureVoiceClipPath(key);
+    if (!resolved) missing.push(key);
+  }
+
+  if (missing.length) {
+    updateVoiceStatus(`Missing voice clips: ${missing.join(', ')}`, 'error');
+    return false;
+  }
+
+  updateVoiceStatus('Voice pack loaded: Lorenzo', 'ready');
+  return true;
+}
+
 async function speakNarration(text, key = null) {
   if (!narrationEnabled || (!text && !key)) return;
 
@@ -469,7 +535,8 @@ async function speakNarration(text, key = null) {
   if (key) {
     const played = await playVoiceFile(key, sessionId);
     if (played) return;
-    updateVoiceStatus(`Missing personal voice clip: ${key}.mp3`, 'error');
+    updateVoiceStatus(`Voice clip failed (${key}); using backup voice.`, 'error');
+    await speakTTS(text || '', sessionId);
     return;
   }
 
@@ -491,20 +558,14 @@ function stopActiveNarration() {
 // Play a personal recorded voice file. Returns true if it played to completion,
 // false if the file doesn't exist or any error occurs.
 function playVoiceFile(key, sessionId) {
-  const candidates = [
-    `./assets/voice/voice/${key}.mp3`,
-    `./assets/voice/voice/${key}.m4a`,
-    `./assets/voice/${key}.mp3`,
-    `./assets/voice/${key}.m4a`,
-  ];
-
-  const tryPath = (path) =>
+  const tryPath = (path, timeoutMs = 12000) =>
     new Promise((resolve) => {
       const audio = new Audio(path);
       audio.preload = 'auto';
+      audio.playbackRate = Math.max(0.8, Math.min(1.3, narrationRate || 1));
       let settled = false;
       let started = false;
-      const loadTimer = setTimeout(() => finish(false), 4500);
+      const loadTimer = setTimeout(() => finish(false), timeoutMs);
 
       const finish = (ok) => {
         if (!settled) {
@@ -529,20 +590,39 @@ function playVoiceFile(key, sessionId) {
         updateVoiceStatus(`Playing your recording: ${key}`, 'speaking');
         activeNarrationAudio = audio;
 
-        audio.onended = () => {
+        // Safety guard: if browser never emits ended, resolve after duration + cushion.
+        const endGuard = setTimeout(() => {
           if (sessionId !== narrationSessionId) {
             finish(false);
             return;
           }
           if (activeNarrationAudio === audio) activeNarrationAudio = null;
-          updateVoiceStatus('Voice ready', 'ready');
+          updateVoiceStatus('Voice ready: Lorenzo', 'ready');
           finish(true);
+        }, Math.max(15000, ((audio.duration || 10) * 1000) + 4000));
+
+        audio.onended = () => {
+          clearTimeout(endGuard);
+          if (sessionId !== narrationSessionId) {
+            finish(false);
+            return;
+          }
+          if (activeNarrationAudio === audio) activeNarrationAudio = null;
+          updateVoiceStatus('Voice ready: Lorenzo', 'ready');
+          finish(true);
+        };
+
+        audio.onerror = () => {
+          clearTimeout(endGuard);
+          if (activeNarrationAudio === audio) activeNarrationAudio = null;
+          finish(false);
         };
 
         audio
           .play()
           .then(() => {})
           .catch(() => {
+            clearTimeout(endGuard);
             if (activeNarrationAudio === audio) activeNarrationAudio = null;
             finish(false);
           });
@@ -555,9 +635,19 @@ function playVoiceFile(key, sessionId) {
     });
 
   return (async () => {
-    for (const path of candidates) {
-      const ok = await tryPath(path);
+    const resolvedPath = await ensureVoiceClipPath(key);
+    if (resolvedPath) {
+      const ok = await tryPath(resolvedPath);
       if (ok) return true;
+    }
+
+    // Retry full candidate list in case a previously-cached path became unavailable.
+    for (const path of getVoiceClipCandidates(key)) {
+      const ok = await tryPath(path);
+      if (ok) {
+        voiceClipPathByKey.set(key, path);
+        return true;
+      }
     }
     return false;
   })();
@@ -914,12 +1004,29 @@ function buildScenarioPlan(scenarioKey, scope) {
 function startMapAnimationLoop() {
   if (mapAnimationTimer) return;
   mapAnimationTimer = setInterval(() => {
-    if (document.body.classList.contains('reduced-motion')) return;
+    const reducedMotion = document.body.classList.contains('reduced-motion');
+    const activeView = document.querySelector('.view.active')?.id;
+    const riskMapVisible = activeView === 'risk-map';
+
+    if (!simulationState.active && !riskMapVisible) return;
+    if (reducedMotion) return;
+
     mapRoutePhase = (mapRoutePhase + 1) % 1200;
 
-    if (simulationState.active || currentMapView === 'flat' || currentMapView === 'globe') {
+    // Keep overview preview responsive during active simulation.
+    if (simulationState.active) {
       renderLeafletMap('riskMapPreview');
+    }
+
+    if (!riskMapVisible) return;
+
+    if (currentMapView === 'flat') {
       renderLeafletMap('flatMapContainer');
+      return;
+    }
+
+    if (currentMapView === 'globe') {
+      renderGlobe();
     }
   }, 85);
 }
@@ -1187,7 +1294,7 @@ function getMapPoints() {
       ...coords,
       region,
       size: 0.38 + maxRisk * 0.14,
-      color: maxRisk >= 4 ? '#ff2d4a' : maxRisk === 3 ? '#ffb800' : maxRisk === 2 ? '#00d4ff' : '#39ff14',
+      color: maxRisk >= 4 ? '#e45858' : maxRisk === 3 ? '#e8a94a' : maxRisk === 2 ? '#4e94df' : '#4f7fc9',
       label: `${coords.label} · ${maxRisk >= 4 ? 'critical' : maxRisk === 3 ? 'elevated' : maxRisk === 2 ? 'watch' : 'stable'}`,
     };
   });
@@ -1201,7 +1308,7 @@ function getMapRoutes() {
     startLng: regionCoordinates[from].lng,
     endLat: regionCoordinates[to].lat,
     endLng: regionCoordinates[to].lng,
-    color: simulationState.mitigated ? '#39ff14' : simulationState.scope === 'company' ? '#ffe08a' : '#8fe8ff',
+    color: simulationState.mitigated ? '#51a672' : simulationState.scope === 'company' ? '#d6a05e' : '#74b0e6',
   }));
 }
 
@@ -1334,11 +1441,9 @@ function ensureMap(containerId) {
     }).setView([12, 0], 1.6);
     previewMap.fitBounds(worldBounds, { padding: [8, 8], animate: false });
     ensureBaseTileLayer(previewMap, 'riskMapPreview');
-    ensureWorldFlatVideoOverlay(previewMap, 'riskMapPreview');
   } else if (containerId === 'riskMapPreview' && previewMap) {
     previewMap.fitBounds(worldBounds, { padding: [8, 8], animate: false });
     ensureBaseTileLayer(previewMap, 'riskMapPreview');
-    ensureWorldFlatVideoOverlay(previewMap, 'riskMapPreview');
   }
 
   if (containerId === 'flatMapContainer' && !flatMap) {
@@ -1351,11 +1456,9 @@ function ensureMap(containerId) {
     }).setView([12, 0], 1.6);
     flatMap.fitBounds(worldBounds, { padding: [20, 14], animate: false });
     ensureBaseTileLayer(flatMap, 'flatMapContainer');
-    ensureWorldFlatVideoOverlay(flatMap, 'flatMapContainer');
   } else if (containerId === 'flatMapContainer' && flatMap) {
     flatMap.fitBounds(worldBounds, { padding: [20, 14], animate: false });
     ensureBaseTileLayer(flatMap, 'flatMapContainer');
-    ensureWorldFlatVideoOverlay(flatMap, 'flatMapContainer');
   }
 
   return containerId === 'riskMapPreview' ? previewMap : flatMap;
@@ -1364,13 +1467,6 @@ function ensureMap(containerId) {
 function renderLeafletMap(containerId) {
   const map = ensureMap(containerId);
   if (!map) return;
-
-  if (containerId === 'riskMapPreview') {
-    map.fitBounds([[-60, -170], [82, 170]], { padding: [6, 6], animate: false });
-  } else if (containerId === 'flatMapContainer') {
-    // Fit the full world view for better readability
-    map.fitBounds([[-85, -180], [85, 180]], { padding: [20, 20], animate: false });
-  }
 
   const layers = containerId === 'riskMapPreview' ? previewLayers : flatLayers;
   clearLayers(layers);
@@ -1397,6 +1493,14 @@ function renderLeafletMap(containerId) {
       weight: simulationState.active ? 2.6 : 2.2,
     }).addTo(map);
     marker.bindPopup(`<strong>${point.label}</strong><br/><span class="muted">Region: ${point.region}</span>`);
+    if (containerId === 'flatMapContainer') {
+      marker.bindTooltip(`${point.region}`, {
+        permanent: true,
+        direction: 'top',
+        offset: [0, -12],
+        className: 'map-region-tooltip',
+      });
+    }
     layers.push(marker);
 
     const core = L.circleMarker([point.lat, point.lng], {
@@ -1408,21 +1512,6 @@ function renderLeafletMap(containerId) {
     }).addTo(map);
     layers.push(core);
 
-    // Add readable location label for flat map view
-    if (containerId === 'flatMapContainer') {
-      const label = L.marker([point.lat + 4.5, point.lng], {
-        icon: L.divIcon({
-          className: 'region-label-marker',
-          html: `<div class="region-label-text" style="color: ${point.color}; border-color: ${point.color};">
-            <strong>${point.region}</strong>
-            <div class="label-status">${point.label.split(' · ')[1] || 'stable'}</div>
-          </div>`,
-          iconSize: [120, 50],
-          iconAnchor: [60, 0],
-        }),
-      }).addTo(map);
-      layers.push(label);
-    }
   });
 
   getMapRoutes().forEach((route) => {
@@ -1449,319 +1538,89 @@ function renderLeafletMap(containerId) {
 
 function renderGlobe() {
   const container = document.getElementById('globeContainer');
-  if (!container) return;
+  if (!container || typeof Globe !== 'function') return;
 
-  if (!techGlobeCanvas || techGlobeCanvas.parentElement !== container) {
-    container.innerHTML = '';
-    techGlobeCanvas = document.createElement('canvas');
-    techGlobeCanvas.className = 'tech-globe-canvas';
-    container.appendChild(techGlobeCanvas);
-  }
+  if (!globeView) {
+    globeView = Globe({ rendererConfig: { antialias: true, alpha: true } })(container)
+      .backgroundColor('rgba(0,0,0,0)')
+      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+      .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+      .showAtmosphere(true)
+      .atmosphereColor('#8cb4d8')
+      .atmosphereAltitude(0.17)
+      .pointAltitude((d) => d.altitude)
+      .pointRadius((d) => d.radius)
+      .pointColor((d) => d.color)
+      .pointLabel((d) => d.label)
+      .arcColor((d) => [d.color, d.color])
+      .arcStroke((d) => d.stroke)
+      .arcAltitude((d) => d.altitude)
+      .arcDashLength((d) => d.dashLength)
+      .arcDashGap((d) => d.dashGap)
+      .arcDashInitialGap(() => Math.random())
+      .arcDashAnimateTime((d) => d.animateTime)
+      .arcLabel((d) => d.label)
+      .width(container.clientWidth)
+      .height(container.clientHeight);
 
-  const width = Math.max(1, container.clientWidth);
-  const height = Math.max(1, container.clientHeight);
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-  if (techGlobeCanvas.width !== Math.floor(width * dpr) || techGlobeCanvas.height !== Math.floor(height * dpr)) {
-    techGlobeCanvas.width = Math.floor(width * dpr);
-    techGlobeCanvas.height = Math.floor(height * dpr);
-    techGlobeCanvas.style.width = `${width}px`;
-    techGlobeCanvas.style.height = `${height}px`;
-  }
-
-  const ctx = techGlobeCanvas.getContext('2d');
-  if (!ctx) return;
-
-  // Refined world regions with proper positioning for readability
-  const worldRegions = [
-    { name: 'North America', lat: 45, lng: -100, status: 'healthy', services: 3 },
-    { name: 'South America', lat: -15, lng: -60, status: 'healthy', services: 1 },
-    { name: 'Europe', lat: 50, lng: 12, status: 'healthy', services: 2 },
-    { name: 'Africa', lat: 0, lng: 22, status: 'healthy', services: 1 },
-    { name: 'Middle East', lat: 25, lng: 50, status: 'healthy', services: 1 },
-    { name: 'Asia Pacific', lat: 35, lng: 110, status: 'healthy', services: 3 },
-  ];
-
-  // Update region statuses based on simulation state
-  if (simulationState.active) {
-    const affectedRegions = simulationState.region ? [simulationState.region] : [];
-    worldRegions.forEach((region) => {
-      if (affectedRegions.includes(region.name.split(' ')[0].toLowerCase()) || 
-          affectedRegions.some(r => region.name.toLowerCase().includes(r))) {
-        region.status = 'critical';
-      } else {
-        region.status = simulationState.mitigated ? 'protected' : 'warning';
-      }
-    });
-  }
-
-  const drawFrame = () => {
-    const reducedMotion = document.body.classList.contains('reduced-motion');
-    const pulse = simulationState.active ? (0.65 + Math.sin((mapRoutePhase / 20) * Math.PI * 2) * 0.35) : 0.3;
-    const shockBoost = Date.now() < simulationShockUntil ? 1.4 : 1;
-    const w = techGlobeCanvas.width / dpr;
-    const h = techGlobeCanvas.height / dpr;
-    const cx = w * 0.5;
-    const cy = h * 0.5;
-    const radius = Math.min(w, h) * 0.32;
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-
-    // Atmospheric outer glow
-    const atmosphereGlow = ctx.createRadialGradient(cx, cy, radius * 0.8, cx, cy, radius * 1.9);
-    atmosphereGlow.addColorStop(0, `rgba(57, 255, 20, ${0.06 + pulse * 0.08})`);
-    atmosphereGlow.addColorStop(0.6, `rgba(0, 212, 255, ${0.04 + pulse * 0.06})`);
-    atmosphereGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = atmosphereGlow;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius * 1.9, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Main sphere with subtle gradient
-    const sphereGrad = ctx.createRadialGradient(cx - radius * 0.3, cy - radius * 0.3, radius * 0.15, cx, cy, radius * 1.05);
-    sphereGrad.addColorStop(0, 'rgba(210, 250, 255, 0.85)');
-    sphereGrad.addColorStop(0.35, 'rgba(100, 210, 255, 0.52)');
-    sphereGrad.addColorStop(0.75, 'rgba(40, 100, 180, 0.35)');
-    sphereGrad.addColorStop(1, 'rgba(15, 35, 70, 0.88)');
-    ctx.fillStyle = sphereGrad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    const project = (latDeg, lngDeg) => {
-      const lat = (latDeg * Math.PI) / 180;
-      const lng = ((lngDeg + techGlobeRotation) * Math.PI) / 180;
-      const x = Math.cos(lat) * Math.sin(lng);
-      const y = Math.sin(lat);
-      const z = Math.cos(lat) * Math.cos(lng);
-      return { x: cx + x * radius * 0.95, y: cy - y * radius * 0.95, z };
-    };
-
-    const drawPolygon = (coords, fill, stroke) => {
-      ctx.beginPath();
-      let started = false;
-      for (const [lat, lng] of coords) {
-        const p = project(lat, lng);
-        if (p.z <= 0.1) {
-          started = false;
-          continue;
-        }
-        if (!started) {
-          ctx.moveTo(p.x, p.y);
-          started = true;
-        } else {
-          ctx.lineTo(p.x, p.y);
-        }
-      }
-      if (!started) return;
-      ctx.closePath();
-      ctx.fillStyle = fill;
-      ctx.fill();
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-    };
-
-    const continentPolygons = [
-      [[72, -168], [62, -142], [50, -125], [42, -110], [34, -95], [24, -88], [18, -98], [24, -115], [38, -135], [52, -155]],
-      [[12, -82], [2, -80], [-10, -74], [-18, -66], [-24, -62], [-32, -58], [-40, -62], [-50, -70], [-52, -76], [-42, -80], [-26, -78], [-8, -76], [6, -78]],
-      [[70, -10], [62, 8], [52, 22], [46, 34], [44, 24], [40, 12], [44, 2], [54, -8], [64, -14]],
-      [[36, -16], [30, -8], [20, 0], [10, 8], [2, 16], [-8, 24], [-20, 30], [-32, 28], [-35, 18], [-30, 6], [-20, -4], [-6, -12], [8, -14], [22, -10]],
-      [[56, 28], [50, 48], [44, 66], [40, 86], [44, 106], [50, 126], [56, 146], [44, 162], [28, 150], [20, 128], [12, 102], [14, 76], [18, 56], [26, 40], [38, 30]],
-      [[-10, 112], [-18, 122], [-24, 134], [-32, 146], [-38, 152], [-40, 138], [-34, 124], [-26, 116], [-16, 110]],
-    ];
-
-    const countryMarkers = [
-      { label: 'US', lat: 39, lng: -98 },
-      { label: 'BR', lat: -14, lng: -52 },
-      { label: 'UK', lat: 54, lng: -2 },
-      { label: 'NG', lat: 9, lng: 8 },
-      { label: 'IN', lat: 21, lng: 78 },
-      { label: 'JP', lat: 36, lng: 138 },
-      { label: 'AU', lat: -25, lng: 133 },
-    ];
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.clip();
-
-    // Subtle continental grid
-    ctx.strokeStyle = 'rgba(150, 220, 255, 0.16)';
-    ctx.lineWidth = 0.8;
-    
-    // Latitude lines
-    for (let lat = -60; lat <= 60; lat += 20) {
-      ctx.beginPath();
-      let started = false;
-      for (let lng = -180; lng <= 180; lng += 5) {
-        const p = project(lat, lng);
-        if (p.z <= 0.1) {
-          started = false;
-          continue;
-        }
-        if (!started) {
-          ctx.moveTo(p.x, p.y);
-          started = true;
-        } else {
-          ctx.lineTo(p.x, p.y);
-        }
-      }
-      ctx.stroke();
+    const controls = globeView.controls?.();
+    if (controls) {
+      controls.enablePan = false;
+      controls.enableDamping = true;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.22;
+      controls.minDistance = 180;
+      controls.maxDistance = 360;
     }
 
-    // Longitude lines
-    for (let lng = -180; lng <= 180; lng += 30) {
-      ctx.beginPath();
-      let started = false;
-      for (let lat = -75; lat <= 75; lat += 4) {
-        const p = project(lat, lng);
-        if (p.z <= 0.1) {
-          started = false;
-          continue;
-        }
-        if (!started) {
-          ctx.moveTo(p.x, p.y);
-          started = true;
-        } else {
-          ctx.lineTo(p.x, p.y);
-        }
-      }
-      ctx.stroke();
-    }
+    globeView.pointOfView({ lat: 24, lng: 12, altitude: 2.2 }, 0);
+  }
 
-    // Render visible continent silhouettes so the globe clearly reads as world geography.
-    continentPolygons.forEach((coords) => {
-      drawPolygon(coords, 'rgba(82, 176, 128, 0.26)', 'rgba(132, 218, 168, 0.4)');
-    });
+  globeView.width(container.clientWidth);
+  globeView.height(container.clientHeight);
 
-    // Render a few country anchors for quick orientation.
-    ctx.font = "10px 'IBM Plex Mono'";
-    ctx.textAlign = 'center';
-    countryMarkers.forEach((marker) => {
-      const p = project(marker.lat, marker.lng);
-      if (p.z <= 0.1) return;
-      ctx.fillStyle = 'rgba(244, 245, 248, 0.92)';
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(222, 236, 255, 0.88)';
-      ctx.fillText(marker.label, p.x, p.y - 6);
-    });
+  const pulse = simulationState.active ? (0.72 + Math.sin((mapRoutePhase / 24) * Math.PI * 2) * 0.28) : 0.58;
+  const shockBoost = Date.now() < simulationShockUntil ? 1.28 : 1;
+  const points = getMapPoints().map((point) => {
+    const elevated = simulationState.active ? 0.12 * pulse : 0.08;
+    return {
+      lat: point.lat,
+      lng: point.lng,
+      radius: point.size * (0.31 + pulse * 0.14),
+      altitude: elevated,
+      color: point.color,
+      label: `<strong>${point.label}</strong><br/>${point.region}`,
+    };
+  });
 
-    // Render world regions with status indicators
-    worldRegions.forEach((region) => {
-      const p = project(region.lat, region.lng);
-      if (p.z <= 0.1) return;
+  const routes = getMapRoutes().map((route) => ({
+    startLat: route.startLat,
+    startLng: route.startLng,
+    endLat: route.endLat,
+    endLng: route.endLng,
+    color: route.color,
+    stroke: simulationState.active ? 0.72 * shockBoost : 0.45,
+    altitude: simulationState.active ? 0.19 : 0.12,
+    dashLength: simulationState.mitigated ? 0.34 : 0.52,
+    dashGap: simulationState.mitigated ? 1.2 : 0.9,
+    animateTime: simulationState.active ? 1700 : 2300,
+    label: simulationState.mitigated ? 'Mitigated propagation route' : 'Cascade propagation route',
+  }));
 
-      // Status color mapping
-      let regionColor = 'rgba(57, 255, 20, 0.8)'; // healthy - neon green
-      let glowColor = 'rgba(57, 255, 20, 0.3)';
-      let textColor = '#e8f5ff';
+  globeView.pointsData(points);
+  globeView.arcsData(routes);
 
-      if (region.status === 'critical') {
-        regionColor = 'rgba(255, 45, 74, 0.85)'; // critical - red
-        glowColor = 'rgba(255, 45, 74, 0.4)';
-      } else if (region.status === 'warning') {
-        regionColor = 'rgba(255, 184, 0, 0.85)'; // warning - amber
-        glowColor = 'rgba(255, 184, 0, 0.35)';
-      } else if (region.status === 'protected') {
-        regionColor = 'rgba(57, 255, 20, 0.9)'; // protected - enhanced green
-        glowColor = 'rgba(57, 255, 20, 0.4)';
-      }
-
-      const baseSize = 6 + region.services * 2;
-      const pulseSize = simulationState.active ? 1 + pulse * 0.35 : 1;
-      const finalSize = baseSize * pulseSize * shockBoost;
-
-      // Outer glow halo
-      const halo = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, finalSize * 2.5);
-      halo.addColorStop(0, glowColor);
-      halo.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = halo;
-      ctx.globalAlpha = 0.6 * (simulationState.active ? pulse : 0.5);
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, finalSize * 2.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Main indicator dot
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = regionColor;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, finalSize, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Protective border for mitigated regions
-      if (region.status === 'protected') {
-        ctx.strokeStyle = 'rgba(57, 255, 20, 0.6)';
-        ctx.lineWidth = 1.5 * shockBoost;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, finalSize + 2, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-    });
-
-    // Render cascade routes
-    const routes = getMapRoutes();
-    routes.forEach((route) => {
-      const start = project(route.startLat, route.startLng);
-      const end = project(route.endLat, route.endLng);
-      if (start.z <= 0.1 || end.z <= 0.1) return;
-
-      const midX = (start.x + end.x) / 2;
-      const midY = (start.y + end.y) / 2 - radius * 0.15;
-
-      ctx.strokeStyle = route.color;
-      ctx.lineWidth = 1.8 * shockBoost;
-      ctx.globalAlpha = 0.55 + pulse * 0.25;
-      ctx.beginPath();
-      ctx.moveTo(start.x, start.y);
-      ctx.quadraticCurveTo(midX, midY, end.x, end.y);
-      ctx.stroke();
-
-      // Animated energy pulse along route
-      const routePhase = (mapRoutePhase + routes.indexOf(route) * 25) % 300;
-      const t = routePhase / 300;
-      const energyX = (1 - t) * (1 - t) * start.x + 2 * (1 - t) * t * midX + t * t * end.x;
-      const energyY = (1 - t) * (1 - t) * start.y + 2 * (1 - t) * t * midY + t * t * end.y;
-
-      const energyGlow = ctx.createRadialGradient(energyX, energyY, 0, energyX, energyY, 8 * shockBoost);
-      energyGlow.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
-      energyGlow.addColorStop(0.7, route.color);
-      energyGlow.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = energyGlow;
-      ctx.globalAlpha = 0.8 + pulse * 0.2;
-      ctx.beginPath();
-      ctx.arc(energyX, energyY, 6 * shockBoost, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    });
-
-    ctx.restore();
-
-    // Protective outer ring border
-    ctx.strokeStyle = `rgba(57, 255, 20, ${0.35 + pulse * 0.2})`;
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius * 1.02, 0, Math.PI * 2);
-    ctx.stroke();
-
-    if (!reducedMotion) techGlobeRotation += 0.15;
-    if (techGlobeRotation > 360) techGlobeRotation -= 360;
-    techGlobeAnimationId = requestAnimationFrame(drawFrame);
-  };
-
-  if (!techGlobeAnimationId) {
-    techGlobeAnimationId = requestAnimationFrame(drawFrame);
+  const controls = globeView.controls?.();
+  if (controls) {
+    controls.autoRotate = !document.body.classList.contains('reduced-motion');
   }
 }
 
 
 function stopTechGlobeAnimation() {
-  if (techGlobeAnimationId) {
-    cancelAnimationFrame(techGlobeAnimationId);
-    techGlobeAnimationId = null;
+  const controls = globeView?.controls?.();
+  if (controls) {
+    controls.autoRotate = false;
   }
 }
 
@@ -1787,11 +1646,15 @@ function renderDashboard() {
   renderCopilotPanels();
   updateTopMetrics();
   renderGraph('dependencyGraphPreview', true);
-  renderGraph('graphDetail');
+  if (document.querySelector('.view.active')?.id === 'dependency-graph') {
+    renderGraph('graphDetail');
+  }
   renderLeafletMap('riskMapPreview');
-  renderLeafletMap('flatMapContainer');
-  renderGlobe();
-  renderRegionList();
+  if (document.querySelector('.view.active')?.id === 'risk-map') {
+    if (currentMapView === 'flat') renderLeafletMap('flatMapContainer');
+    if (currentMapView === 'globe') renderGlobe();
+    if (currentMapView === 'list') renderRegionList();
+  }
   renderMapLegend();
 }
 
@@ -1811,6 +1674,9 @@ function setRiskView(view) {
   showGlobeBtn.classList.toggle('primary', view === 'globe');
   showFlatMapBtn.classList.toggle('primary', view === 'flat');
   showRegionListBtn.classList.toggle('primary', view === 'list');
+
+  flatMap?.invalidateSize();
+  previewMap?.invalidateSize();
 
   if (view === 'globe') {
     renderGlobe();
@@ -1908,18 +1774,18 @@ function wireInteractions() {
     setRiskView('list');
   });
 
-  document.getElementById('themeSelector').addEventListener('change', (event) => {
+  document.getElementById('themeSelector')?.addEventListener('change', (event) => {
     applyTheme(event.target.value);
     renderDashboard();
   });
-  document.getElementById('textSizeSelector').addEventListener('change', (event) => {
+  document.getElementById('textSizeSelector')?.addEventListener('change', (event) => {
     applyTextSizeSetting(event.target.value);
   });
-  document.getElementById('contrastSelector').addEventListener('change', (event) => {
+  document.getElementById('contrastSelector')?.addEventListener('change', (event) => {
     applyContrastSetting(event.target.value);
     renderDashboard();
   });
-  document.getElementById('motionToggle').addEventListener('change', (event) => {
+  document.getElementById('motionToggle')?.addEventListener('change', (event) => {
     applyMotionSetting(event.target.value);
     renderDashboard();
   });
@@ -1992,6 +1858,12 @@ async function runAutoplayDemo() {
     const ready = await ensureNarrationReady();
     if (!ready) {
       updateVoiceStatus('Voice files not ready. Click Test Voice and try again.', 'error');
+      return;
+    }
+
+    const voicePackReady = await ensureDemoVoicePackReady();
+    if (!voicePackReady) {
+      setDemoBanner('Demo stopped: required voice clips are missing.');
       return;
     }
 
@@ -2211,7 +2083,6 @@ function bootstrapDashboard() {
   initializeNavigation();
   wireInteractions();
   renderDashboard();
-  setRiskView('globe');
 
   if (typeof speechSynthesis !== 'undefined') {
     speechSynthesis.onvoiceschanged = () => cacheNarrationVoices();

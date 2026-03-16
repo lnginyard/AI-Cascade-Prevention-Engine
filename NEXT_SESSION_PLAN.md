@@ -1,5 +1,108 @@
 # Final Session Plan — Submission (Deadline: March 12, 2026)
 
+## 30-60-90 Day Roadmap (Starting March 16, 2026)
+
+### Objective
+
+Move from a strong demo platform to a production-ready resilience product with reliable UX, security controls, performance targets, and repeatable release quality.
+
+### Priority order
+
+1. Demo reliability and user trust (voiceover + scenario flow)
+2. Release quality gates and test automation
+3. Security and governance hardening
+4. Operational observability and SLOs
+5. Performance budgets and continuous optimization
+
+### Day 0-30 (Stabilize)
+
+Owner focus: Product Engineering + Frontend
+
+Deliverables:
+
+1. End-to-end browser tests for Run Demo flow, including voice clip preflight and step sequencing.
+2. CI pipeline gate for build, tests, lint, and smoke checks.
+3. Regression checklist for map/globe interactions and autoplay demo.
+4. Baseline performance report for first load and interactive readiness.
+
+Success metrics:
+
+1. Demo flow pass rate >= 98% across CI runs.
+2. Zero known blockers in voiceover sequence correctness.
+3. P95 initial page load < 3.0s on standard broadband.
+
+Primary implementation files:
+
+1. [ui/app.js](ui/app.js)
+2. [ui/index.html](ui/index.html)
+3. [ui/styles.css](ui/styles.css)
+4. [package.json](package.json)
+5. [.github/workflows](.github/workflows)
+
+### Day 31-60 (Harden)
+
+Owner focus: Platform + Security + Backend
+
+Deliverables:
+
+1. API contract tests and schema validation for key telemetry and response payloads.
+2. Security hardening pass: token handling, CSP/headers, key rotation checklist, and auth error handling.
+3. Playbook rule validation suite using representative health/logistics/utilities events.
+4. Production runbook for incidents, rollback steps, and on-call response paths.
+
+Success metrics:
+
+1. 100% of critical endpoints covered by contract tests.
+2. No high-severity security findings in static/config review.
+3. Mean time to diagnose demo/API issues reduced by 30%.
+
+Primary implementation files:
+
+1. [src/api](src/api)
+2. [src/schemas](src/schemas)
+3. [Systemic-Telemetry-Schemas.md](Systemic-Telemetry-Schemas.md)
+4. [DEPLOYMENT.md](DEPLOYMENT.md)
+5. [scripts](scripts)
+
+### Day 61-90 (Scale)
+
+Owner focus: Product + Platform Operations
+
+Deliverables:
+
+1. Performance budget enforcement in CI with fail thresholds.
+2. SLO dashboard for uptime, latency, and demo success rate.
+3. Usage analytics for feature adoption and demo completion funnel.
+4. Release cadence playbook (weekly patch, monthly minor, rollback protocol).
+
+Success metrics:
+
+1. P95 initial page load < 2.2s and interactive map open < 1.2s.
+2. Demo completion rate >= 90% for internal/external showcase sessions.
+3. 100% of releases pass quality gate before deploy.
+
+Primary implementation files:
+
+1. [CONFORMANCE_REPORT.md](CONFORMANCE_REPORT.md)
+2. [requirements.md](requirements.md)
+3. [README.md](README.md)
+4. [NEXT_SESSION_PLAN.md](NEXT_SESSION_PLAN.md)
+
+### Execution checkpoints
+
+1. Weekly: roadmap review and metric snapshot.
+2. Biweekly: reliability and performance trend review.
+3. Monthly: go/no-go check for next phase promotion.
+
+### Risks and mitigations
+
+1. Risk: visual changes break demo flow.
+   Mitigation: enforce end-to-end tests before merge.
+2. Risk: auth and token issues block live mode.
+   Mitigation: add automated live-route health checks with test credentials in non-prod.
+3. Risk: heavy dependencies regress load performance.
+   Mitigation: add bundle budget alarms and lazy-load audits.
+
 ## UI / Demo Handoff For Next Session (March 11, 2026)
 
 ### Latest user feedback to preserve
