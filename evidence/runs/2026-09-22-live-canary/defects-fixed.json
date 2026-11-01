@@ -1,0 +1,15 @@
+{
+  "defects": [
+    {
+      "symptom": "Telemetry ingestion returned HTTP 400",
+      "rootCause": "Telemetry Lambda role lacked kms:GenerateDataKey for the encrypted S3 bucket",
+      "fix": "Added kms:GenerateDataKey and kms:Decrypt to TelemetryIngestFunction"
+    },
+    {
+      "symptom": "Signature matcher failed with KMS AccessDenied",
+      "rootCause": "Signature matcher role lacked kms:Decrypt for the encrypted DynamoDB table",
+      "fix": "Added kms:Decrypt and kms:GenerateDataKey to SignatureMatcherV2Function"
+    }
+  ],
+  "verification": "Both fixes deployed and the guarded cascade test completed successfully"
+}

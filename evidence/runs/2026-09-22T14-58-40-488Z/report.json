@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-09-22T14:58:40.489Z",
+  "evidenceType": "deterministic_replay",
+  "limitation": "This report proves behavior on the versioned scenarios only. It does not prove production accuracy, avoided loss, or causal prevention without timestamped AWS telemetry and an outcome record.",
+  "summary": {
+    "scenarioCount": 3,
+    "passedCount": 3,
+    "failedCount": 0,
+    "truePositiveCount": 2,
+    "falsePositiveCount": 0,
+    "falseNegativeCount": 0,
+    "trueNegativeCount": 1
+  },
+  "scenarios": [
+    {
+      "scenarioId": "error-propagation-positive-001",
+      "description": "A payment dependency begins failing and a downstream checkout service follows within one minute.",
+      "expected": {
+        "detected": true,
+        "signatureType": "error_propagation"
+      },
+      "observed": {
+        "detected": true,
+        "signatureType": "error_propagation",
+        "originServiceId": "payments",
+        "affectedServices": [
+          "payments",
+          "checkout"
+        ],
+        "confidenceScore": 0.9,
+        "evidence": [
+          "error_rate >= 3 stddev in 2+ services within 60s"
+        ]
+      },
+      "detectionWindowMs": 30000,
+      "passed": true
+    },
+    {
+      "scenarioId": "error-propagation-negative-001",
+      "description": "A single service has a mild error-rate increase that should not be classified as a cascade.",
+      "expected": {
+        "detected": false
+      },
+      "observed": {
+        "detected": false
+      },
+      "passed": true
+    },
+    {
+      "scenarioId": "latency-cascade-positive-001",
+      "description": "A slow inventory dependency is followed by a checkout latency increase within thirty seconds.",
+      "expected": {
+        "detected": true,
+        "signatureType": "latency_cascade"
+      },
+      "observed": {
+        "detected": true,
+        "signatureType": "latency_cascade",
+        "originServiceId": "inventory",
+        "affectedServices": [
+          "inventory",
+          "checkout"
+        ],
+        "confidenceScore": 0.88,
+        "evidence": [
+          "latency increase >= 50% across dependency path within 30s"
+        ]
+      },
+      "detectionWindowMs": 15000,
+      "passed": true
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "1.0",
+  "scenarios": [
+    {
+      "scenarioId": "error-propagation-positive-001",
+      "description": "A payment dependency begins failing and a downstream checkout service follows within one minute.",
+      "expected": {
+        "detected": true,
+        "signatureType": "error_propagation"
+      },
+      "anomalies": [
+        {
+          "serviceId": "payments",
+          "type": "error_rate",
+          "observedAt": 1704067200000,
+          "deviationStdDev": 4.2
+        },
+        {
+          "serviceId": "checkout",
+          "dependencyServiceId": "payments",
+          "type": "error_rate",
+          "observedAt": 1704067230000,
+          "deviationStdDev": 3.7
+        }
+      ]
+    },
+    {
+      "scenarioId": "error-propagation-negative-001",
+      "description": "A single service has a mild error-rate increase that should not be classified as a cascade.",
+      "expected": {
+        "detected": false
+      },
+      "anomalies": [
+        {
+          "serviceId": "catalog",
+          "type": "error_rate",
+          "observedAt": 1704067200000,
+          "deviationStdDev": 1.8
+        }
+      ]
+    },
+    {
+      "scenarioId": "latency-cascade-positive-001",
+      "description": "A slow inventory dependency is followed by a checkout latency increase within thirty seconds.",
+      "expected": {
+        "detected": true,
+        "signatureType": "latency_cascade"
+      },
+      "anomalies": [
+        {
+          "serviceId": "inventory",
+          "type": "latency",
+          "observedAt": 1704067200000,
+          "latencyIncreasePct": 85
+        },
+        {
+          "serviceId": "checkout",
+          "dependencyServiceId": "inventory",
+          "type": "latency",
+          "observedAt": 1704067215000,
+          "latencyIncreasePct": 62
+        }
+      ]
+    }
+  ]
+}

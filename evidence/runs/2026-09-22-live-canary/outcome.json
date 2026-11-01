@@ -1,0 +1,37 @@
+{
+  "telemetryCanary": {
+    "requestType": "IAM SigV4 POST /v1/telemetry/ingest",
+    "source": "logistics",
+    "nodeId": "canary-ingest-002",
+    "metric": "throughputPctOfNorm=55",
+    "result": "HTTP 200",
+    "persistedTo": ["KMS-encrypted S3 telemetry bucket", "DynamoDB telemetry cache"]
+  },
+  "cascadeCanary": {
+    "input": {
+      "source": "cascade-prevention.anomaly",
+      "detailType": "AnomalyDetected",
+      "services": ["canary-payments", "canary-checkout"],
+      "signal": "error_rate",
+      "deviationStdDev": [4.2, 3.7]
+    },
+    "detectorResult": {
+      "signatureType": "error_propagation",
+      "originServiceId": "canary-payments",
+      "confidenceScore": 0.9,
+      "affectedServices": ["canary-payments", "canary-checkout"]
+    },
+    "remediationPlan": {
+      "created": true,
+      "status": "PENDING_APPROVAL",
+      "execution": "intentionally disabled during test"
+    }
+  },
+  "healthChecks": {
+    "cloudFormation": "UPDATE_COMPLETE",
+    "appUrl": "HTTP 200",
+    "articleUrl": "HTTP 200",
+    "unitAndIntegrationTests": "7 passed",
+    "typescriptBuild": "passed"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "runId": "2026-09-22-live-canary",
+  "evidenceType": "guarded_aws_canary",
+  "environment": "development account with production-style AWS services",
+  "accountAlias": "cascade-free-tier",
+  "accountId": "200090081895",
+  "region": "us-east-1",
+  "stack": "CascadePreventionStack",
+  "stackStatusAfterRun": "UPDATE_COMPLETE",
+  "executionGuard": "REMEDIATION_EXECUTION_ENABLED=false during synthetic cascade test; restored to true afterward",
+  "secretsIncluded": false,
+  "limitations": [
+    "Synthetic anomaly, not a customer incident",
+    "No production customer impact was measured",
+    "Remediation actions were intentionally not executed"
+  ]
+}

@@ -41,4 +41,25 @@ describe('remediation_planner_handler', () => {
 
     await expect(handler(event)).resolves.toBeUndefined();
   });
+
+  it('does not start remediation execution when disabled', async () => {
+    process.env.REMEDIATION_EXECUTION_ENABLED = 'false';
+
+    const { handler } = await import('./remediation_planner_handler');
+    const { SFNClient } = await import('@aws-sdk/client-sfn');
+    const startExecution = (SFNClient as jest.Mock).mock.results[0]?.value.send;
+    startExecution.mockClear();
+
+    await handler({
+      detail: {
+        predictionId: 'pred-disabled',
+        signatureId: 'sig-disabled',
+        predictedBlastRadius: ['svc-a', 'svc-b', 'svc-c'],
+        confidenceScore: 0.91,
+        createdAt: new Date().toISOString(),
+      },
+    } as EventBridgeEvent<'CascadePathPredicted', any>);
+
+    expect(startExecution).not.toHaveBeenCalled();
+  });
 });

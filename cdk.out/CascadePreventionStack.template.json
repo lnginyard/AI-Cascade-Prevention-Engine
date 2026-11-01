@@ -1268,137 +1268,6 @@
     "aws:cdk:path": "CascadePreventionStack/OperationsConsoleBucket/Policy/Resource"
    }
   },
-  "OperationsConsoleCertificateCertificateRequestorFunctionServiceRole8C3DAE93": {
-   "Type": "AWS::IAM::Role",
-   "Properties": {
-    "AssumeRolePolicyDocument": {
-     "Statement": [
-      {
-       "Action": "sts:AssumeRole",
-       "Effect": "Allow",
-       "Principal": {
-        "Service": "lambda.amazonaws.com"
-       }
-      }
-     ],
-     "Version": "2012-10-17"
-    },
-    "ManagedPolicyArns": [
-     {
-      "Fn::Join": [
-       "",
-       [
-        "arn:",
-        {
-         "Ref": "AWS::Partition"
-        },
-        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-       ]
-      ]
-     }
-    ]
-   },
-   "Metadata": {
-    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorFunction/ServiceRole/Resource"
-   }
-  },
-  "OperationsConsoleCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy21A21578": {
-   "Type": "AWS::IAM::Policy",
-   "Properties": {
-    "PolicyDocument": {
-     "Statement": [
-      {
-       "Action": [
-        "acm:AddTagsToCertificate",
-        "acm:DeleteCertificate",
-        "acm:DescribeCertificate",
-        "acm:RequestCertificate",
-        "route53:GetChange"
-       ],
-       "Effect": "Allow",
-       "Resource": "*"
-      },
-      {
-       "Action": "route53:changeResourceRecordSets",
-       "Condition": {
-        "ForAllValues:StringEquals": {
-         "route53:ChangeResourceRecordSetsRecordTypes": [
-          "CNAME"
-         ],
-         "route53:ChangeResourceRecordSetsActions": [
-          "UPSERT"
-         ]
-        },
-        "ForAllValues:StringLike": {
-         "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
-          "*.aicpe.dev"
-         ]
-        }
-       },
-       "Effect": "Allow",
-       "Resource": "arn:aws:route53:::hostedzone/Z09581692MGKXVAUBBRRM"
-      }
-     ],
-     "Version": "2012-10-17"
-    },
-    "PolicyName": "OperationsConsoleCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy21A21578",
-    "Roles": [
-     {
-      "Ref": "OperationsConsoleCertificateCertificateRequestorFunctionServiceRole8C3DAE93"
-     }
-    ]
-   },
-   "Metadata": {
-    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorFunction/ServiceRole/DefaultPolicy/Resource"
-   }
-  },
-  "OperationsConsoleCertificateCertificateRequestorFunction6D6C1F3F": {
-   "Type": "AWS::Lambda::Function",
-   "Properties": {
-    "Code": {
-     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
-     "S3Key": "b073cebcf4d61fb152a30f5a5e57a94df7f980a549fdf1a79a0b18c5750522d8.zip"
-    },
-    "Handler": "index.certificateRequestHandler",
-    "Role": {
-     "Fn::GetAtt": [
-      "OperationsConsoleCertificateCertificateRequestorFunctionServiceRole8C3DAE93",
-      "Arn"
-     ]
-    },
-    "Runtime": "nodejs22.x",
-    "Timeout": 900
-   },
-   "DependsOn": [
-    "OperationsConsoleCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy21A21578",
-    "OperationsConsoleCertificateCertificateRequestorFunctionServiceRole8C3DAE93"
-   ],
-   "Metadata": {
-    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorFunction/Resource",
-    "aws:asset:path": "asset.b073cebcf4d61fb152a30f5a5e57a94df7f980a549fdf1a79a0b18c5750522d8",
-    "aws:asset:is-bundled": false,
-    "aws:asset:property": "Code"
-   }
-  },
-  "OperationsConsoleCertificateCertificateRequestorResource42BB465B": {
-   "Type": "AWS::CloudFormation::CustomResource",
-   "Properties": {
-    "ServiceToken": {
-     "Fn::GetAtt": [
-      "OperationsConsoleCertificateCertificateRequestorFunction6D6C1F3F",
-      "Arn"
-     ]
-    },
-    "DomainName": "aicpe.dev",
-    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
-    "Region": "us-east-1"
-   },
-   "UpdateReplacePolicy": "Delete",
-   "DeletionPolicy": "Delete",
-   "Metadata": {
-    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleCertificate/CertificateRequestorResource/Default"
-   }
-  },
   "OperationsConsoleDistributionOrigin1S3OriginAccessControl2F757E63": {
    "Type": "AWS::CloudFront::OriginAccessControl",
    "Properties": {
@@ -1417,9 +1286,6 @@
    "Type": "AWS::CloudFront::Distribution",
    "Properties": {
     "DistributionConfig": {
-     "Aliases": [
-      "aicpe.dev"
-     ],
      "Comment": "Cascade Prevention Engine operations console",
      "CustomErrorResponses": [
       {
@@ -1464,17 +1330,7 @@
         "OriginAccessIdentity": ""
        }
       }
-     ],
-     "ViewerCertificate": {
-      "AcmCertificateArn": {
-       "Fn::GetAtt": [
-        "OperationsConsoleCertificateCertificateRequestorResource42BB465B",
-        "Arn"
-       ]
-      },
-      "MinimumProtocolVersion": "TLSv1.2_2021",
-      "SslSupportMethod": "sni-only"
-     }
+     ]
     }
    },
    "Metadata": {
@@ -1485,7 +1341,9 @@
    "Type": "AWS::Lambda::LayerVersion",
    "Properties": {
     "Content": {
-     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
      "S3Key": "0cfdecad2260a3a84ad0c2d08a77e03c9d25e26c7b52f26b1e1faf97aef92f18.zip"
     },
     "Description": "/opt/awscli/aws"
@@ -1507,10 +1365,12 @@
      ]
     },
     "SourceBucketNames": [
-     "cdk-hnb659fds-assets-593688888943-us-east-1"
+     {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     }
     ],
     "SourceObjectKeys": [
-     "58b63df3859a90bfd998e39856faa901fc0ba68afc18a26ff3bf5866a3bccfac.zip"
+     "81c6007d2a45d444c2dbdf360ff9f183c1c2edf5881d5cd596517c3cc974c5d7.zip"
     ],
     "DestinationBucketName": {
      "Ref": "OperationsConsoleBucketD13072BC"
@@ -1578,8 +1438,37 @@
        ],
        "Effect": "Allow",
        "Resource": [
-        "arn:aws:s3:::cdk-hnb659fds-assets-593688888943-us-east-1",
-        "arn:aws:s3:::cdk-hnb659fds-assets-593688888943-us-east-1/*"
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":s3:::",
+           {
+            "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+           },
+           "/*"
+          ]
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":s3:::",
+           {
+            "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+           }
+          ]
+         ]
+        }
        ]
       },
       {
@@ -1665,7 +1554,9 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
      "S3Key": "3423a042b818e31c1e34a19d6689ab2e5f9b70fcbe9e71df66f241b20a200bd9.zip"
     },
     "Environment": {
@@ -1697,62 +1588,6 @@
     "aws:asset:path": "asset.3423a042b818e31c1e34a19d6689ab2e5f9b70fcbe9e71df66f241b20a200bd9",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
-   }
-  },
-  "OperationsConsoleAliasRecordA4E0EB7E": {
-   "Type": "AWS::Route53::RecordSet",
-   "Properties": {
-    "AliasTarget": {
-     "DNSName": {
-      "Fn::GetAtt": [
-       "OperationsConsoleDistribution9384F8A9",
-       "DomainName"
-      ]
-     },
-     "HostedZoneId": {
-      "Fn::FindInMap": [
-       "AWSCloudFrontPartitionHostedZoneIdMap",
-       {
-        "Ref": "AWS::Partition"
-       },
-       "zoneId"
-      ]
-     }
-    },
-    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
-    "Name": "aicpe.dev.",
-    "Type": "A"
-   },
-   "Metadata": {
-    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleAliasRecord/Resource"
-   }
-  },
-  "OperationsConsoleAliasRecordIpv6DFDDB8A7": {
-   "Type": "AWS::Route53::RecordSet",
-   "Properties": {
-    "AliasTarget": {
-     "DNSName": {
-      "Fn::GetAtt": [
-       "OperationsConsoleDistribution9384F8A9",
-       "DomainName"
-      ]
-     },
-     "HostedZoneId": {
-      "Fn::FindInMap": [
-       "AWSCloudFrontPartitionHostedZoneIdMap",
-       {
-        "Ref": "AWS::Partition"
-       },
-       "zoneId"
-      ]
-     }
-    },
-    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
-    "Name": "aicpe.dev.",
-    "Type": "AAAA"
-   },
-   "Metadata": {
-    "aws:cdk:path": "CascadePreventionStack/OperationsConsoleAliasRecordIpv6/Resource"
    }
   },
   "ArticleSiteBucketF1B2E614": {
@@ -1880,137 +1715,6 @@
     "aws:cdk:path": "CascadePreventionStack/ArticleSiteBucket/Policy/Resource"
    }
   },
-  "ArticleSiteCertificateCertificateRequestorFunctionServiceRole8434EFF1": {
-   "Type": "AWS::IAM::Role",
-   "Properties": {
-    "AssumeRolePolicyDocument": {
-     "Statement": [
-      {
-       "Action": "sts:AssumeRole",
-       "Effect": "Allow",
-       "Principal": {
-        "Service": "lambda.amazonaws.com"
-       }
-      }
-     ],
-     "Version": "2012-10-17"
-    },
-    "ManagedPolicyArns": [
-     {
-      "Fn::Join": [
-       "",
-       [
-        "arn:",
-        {
-         "Ref": "AWS::Partition"
-        },
-        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-       ]
-      ]
-     }
-    ]
-   },
-   "Metadata": {
-    "aws:cdk:path": "CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorFunction/ServiceRole/Resource"
-   }
-  },
-  "ArticleSiteCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy77BD8365": {
-   "Type": "AWS::IAM::Policy",
-   "Properties": {
-    "PolicyDocument": {
-     "Statement": [
-      {
-       "Action": [
-        "acm:AddTagsToCertificate",
-        "acm:DeleteCertificate",
-        "acm:DescribeCertificate",
-        "acm:RequestCertificate",
-        "route53:GetChange"
-       ],
-       "Effect": "Allow",
-       "Resource": "*"
-      },
-      {
-       "Action": "route53:changeResourceRecordSets",
-       "Condition": {
-        "ForAllValues:StringEquals": {
-         "route53:ChangeResourceRecordSetsRecordTypes": [
-          "CNAME"
-         ],
-         "route53:ChangeResourceRecordSetsActions": [
-          "UPSERT"
-         ]
-        },
-        "ForAllValues:StringLike": {
-         "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
-          "*.article.aicpe.dev"
-         ]
-        }
-       },
-       "Effect": "Allow",
-       "Resource": "arn:aws:route53:::hostedzone/Z09581692MGKXVAUBBRRM"
-      }
-     ],
-     "Version": "2012-10-17"
-    },
-    "PolicyName": "ArticleSiteCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy77BD8365",
-    "Roles": [
-     {
-      "Ref": "ArticleSiteCertificateCertificateRequestorFunctionServiceRole8434EFF1"
-     }
-    ]
-   },
-   "Metadata": {
-    "aws:cdk:path": "CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorFunction/ServiceRole/DefaultPolicy/Resource"
-   }
-  },
-  "ArticleSiteCertificateCertificateRequestorFunction1B9EFF6D": {
-   "Type": "AWS::Lambda::Function",
-   "Properties": {
-    "Code": {
-     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
-     "S3Key": "b073cebcf4d61fb152a30f5a5e57a94df7f980a549fdf1a79a0b18c5750522d8.zip"
-    },
-    "Handler": "index.certificateRequestHandler",
-    "Role": {
-     "Fn::GetAtt": [
-      "ArticleSiteCertificateCertificateRequestorFunctionServiceRole8434EFF1",
-      "Arn"
-     ]
-    },
-    "Runtime": "nodejs22.x",
-    "Timeout": 900
-   },
-   "DependsOn": [
-    "ArticleSiteCertificateCertificateRequestorFunctionServiceRoleDefaultPolicy77BD8365",
-    "ArticleSiteCertificateCertificateRequestorFunctionServiceRole8434EFF1"
-   ],
-   "Metadata": {
-    "aws:cdk:path": "CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorFunction/Resource",
-    "aws:asset:path": "asset.b073cebcf4d61fb152a30f5a5e57a94df7f980a549fdf1a79a0b18c5750522d8",
-    "aws:asset:is-bundled": false,
-    "aws:asset:property": "Code"
-   }
-  },
-  "ArticleSiteCertificateCertificateRequestorResource29689D96": {
-   "Type": "AWS::CloudFormation::CustomResource",
-   "Properties": {
-    "ServiceToken": {
-     "Fn::GetAtt": [
-      "ArticleSiteCertificateCertificateRequestorFunction1B9EFF6D",
-      "Arn"
-     ]
-    },
-    "DomainName": "article.aicpe.dev",
-    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
-    "Region": "us-east-1"
-   },
-   "UpdateReplacePolicy": "Delete",
-   "DeletionPolicy": "Delete",
-   "Metadata": {
-    "aws:cdk:path": "CascadePreventionStack/ArticleSiteCertificate/CertificateRequestorResource/Default"
-   }
-  },
   "ArticleSiteDistributionOrigin1S3OriginAccessControl60C6DCD9": {
    "Type": "AWS::CloudFront::OriginAccessControl",
    "Properties": {
@@ -2029,9 +1733,6 @@
    "Type": "AWS::CloudFront::Distribution",
    "Properties": {
     "DistributionConfig": {
-     "Aliases": [
-      "article.aicpe.dev"
-     ],
      "Comment": "Cascade Prevention Engine article site",
      "DefaultCacheBehavior": {
       "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
@@ -2062,17 +1763,7 @@
         "OriginAccessIdentity": ""
        }
       }
-     ],
-     "ViewerCertificate": {
-      "AcmCertificateArn": {
-       "Fn::GetAtt": [
-        "ArticleSiteCertificateCertificateRequestorResource29689D96",
-        "Arn"
-       ]
-      },
-      "MinimumProtocolVersion": "TLSv1.2_2021",
-      "SslSupportMethod": "sni-only"
-     }
+     ]
     }
    },
    "Metadata": {
@@ -2083,7 +1774,9 @@
    "Type": "AWS::Lambda::LayerVersion",
    "Properties": {
     "Content": {
-     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
      "S3Key": "0cfdecad2260a3a84ad0c2d08a77e03c9d25e26c7b52f26b1e1faf97aef92f18.zip"
     },
     "Description": "/opt/awscli/aws"
@@ -2105,10 +1798,12 @@
      ]
     },
     "SourceBucketNames": [
-     "cdk-hnb659fds-assets-593688888943-us-east-1"
+     {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     }
     ],
     "SourceObjectKeys": [
-     "5928b1e65b0bb8368d66ee736f3297c235cb12a16493fb93ad23588d96084b62.zip"
+     "efee3b323cf41f2760fa74a07448613d14069810dbafd35d7c27332843d9edbc.zip"
     ],
     "DestinationBucketName": {
      "Ref": "ArticleSiteBucketF1B2E614"
@@ -2127,62 +1822,6 @@
    "DeletionPolicy": "Delete",
    "Metadata": {
     "aws:cdk:path": "CascadePreventionStack/ArticleSiteDeployment/CustomResource/Default"
-   }
-  },
-  "ArticleSiteAliasRecordF1C652A8": {
-   "Type": "AWS::Route53::RecordSet",
-   "Properties": {
-    "AliasTarget": {
-     "DNSName": {
-      "Fn::GetAtt": [
-       "ArticleSiteDistributionBC7D0080",
-       "DomainName"
-      ]
-     },
-     "HostedZoneId": {
-      "Fn::FindInMap": [
-       "AWSCloudFrontPartitionHostedZoneIdMap",
-       {
-        "Ref": "AWS::Partition"
-       },
-       "zoneId"
-      ]
-     }
-    },
-    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
-    "Name": "article.aicpe.dev.",
-    "Type": "A"
-   },
-   "Metadata": {
-    "aws:cdk:path": "CascadePreventionStack/ArticleSiteAliasRecord/Resource"
-   }
-  },
-  "ArticleSiteAliasRecordIpv61CD0C741": {
-   "Type": "AWS::Route53::RecordSet",
-   "Properties": {
-    "AliasTarget": {
-     "DNSName": {
-      "Fn::GetAtt": [
-       "ArticleSiteDistributionBC7D0080",
-       "DomainName"
-      ]
-     },
-     "HostedZoneId": {
-      "Fn::FindInMap": [
-       "AWSCloudFrontPartitionHostedZoneIdMap",
-       {
-        "Ref": "AWS::Partition"
-       },
-       "zoneId"
-      ]
-     }
-    },
-    "HostedZoneId": "Z09581692MGKXVAUBBRRM",
-    "Name": "article.aicpe.dev.",
-    "Type": "AAAA"
-   },
-   "Metadata": {
-    "aws:cdk:path": "CascadePreventionStack/ArticleSiteAliasRecordIpv6/Resource"
    }
   },
   "PlaybookMappingsPlaybookMappingsTable6905E937": {
@@ -2270,6 +1909,44 @@
     "aws:cdk:path": "CascadePreventionStack/RemediationPlansTable/Resource"
    }
   },
+  "AuditEventsTable0723963E": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "tenantId",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "eventKey",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "KeySchema": [
+     {
+      "AttributeName": "tenantId",
+      "KeyType": "HASH"
+     },
+     {
+      "AttributeName": "eventKey",
+      "KeyType": "RANGE"
+     }
+    ],
+    "PointInTimeRecoverySpecification": {
+     "PointInTimeRecoveryEnabled": true
+    },
+    "SSESpecification": {
+     "SSEEnabled": true
+    },
+    "TableName": "CascadePrevention-AuditEvents"
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "CascadePreventionStack/AuditEventsTable/Resource"
+   }
+  },
   "CascadeAlertsTopicE8D9159D": {
    "Type": "AWS::SNS::Topic",
    "Properties": {
@@ -2337,6 +2014,19 @@
        }
       },
       {
+       "Action": [
+        "kms:Decrypt",
+        "kms:GenerateDataKey"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "EncryptionKey1B843E66",
+         "Arn"
+        ]
+       }
+      },
+      {
        "Action": "events:PutEvents",
        "Effect": "Allow",
        "Resource": {
@@ -2374,7 +2064,9 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
      "S3Key": "e35ae991549d83fbe7e4281b68eb396e1b4159bc7a9139e572ca5deb768303a5.zip"
     },
     "Environment": {
@@ -2462,6 +2154,19 @@
        }
       },
       {
+       "Action": [
+        "kms:Decrypt",
+        "kms:GenerateDataKey"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "EncryptionKey1B843E66",
+         "Arn"
+        ]
+       }
+      },
+      {
        "Action": "events:PutEvents",
        "Effect": "Allow",
        "Resource": {
@@ -2496,7 +2201,9 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
      "S3Key": "7022f87ad090a32705bd3b3ec5f3860b1ba1a468d89cb1560d20421bf3a65c0a.zip"
     },
     "Environment": {
@@ -2637,6 +2344,12 @@
        "Resource": [
         {
          "Fn::GetAtt": [
+          "AuditEventsTable0723963E",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::GetAtt": [
           "DependencyGraph3324833E",
           "Arn"
          ]
@@ -2690,8 +2403,10 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
-     "S3Key": "a16ea12e9f62cd4385d5623fbc52c039e91ce98b28ec616f0dff9f34239585c6.zip"
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "431b3a39c085bcc7f924cc0fb6ae3e26d5abd1d76c5060a1061503f1ac675c4e.zip"
     },
     "Environment": {
      "Variables": {
@@ -2703,6 +2418,9 @@
       },
       "REMEDIATION_PLANS_TABLE": {
        "Ref": "RemediationPlansTableC30E9BB6"
+      },
+      "AUDIT_EVENTS_TABLE": {
+       "Ref": "AuditEventsTable0723963E"
       },
       "EVENT_BUS_NAME": {
        "Ref": "EventBus7B8748AA"
@@ -2729,7 +2447,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "CascadePreventionStack/CascadeApiFunction/Resource",
-    "aws:asset:path": "asset.a16ea12e9f62cd4385d5623fbc52c039e91ce98b28ec616f0dff9f34239585c6",
+    "aws:asset:path": "asset.431b3a39c085bcc7f924cc0fb6ae3e26d5abd1d76c5060a1061503f1ac675c4e",
     "aws:asset:is-bundled": true,
     "aws:asset:property": "Code"
    }
@@ -2772,7 +2490,9 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
      "S3Key": "01455685c9ab33eb684e55e7fa98fec3de446c5dfaf87b49ce41b410e761529a.zip"
     },
     "Environment": {
@@ -2872,7 +2592,9 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
      "S3Key": "e102dcf55b0f6da1767537ed867d42b045311f828d79ce0245744864381cc537.zip"
     },
     "Environment": {
@@ -3103,8 +2825,10 @@
    "Type": "AWS::Lambda::Function",
    "Properties": {
     "Code": {
-     "S3Bucket": "cdk-hnb659fds-assets-593688888943-us-east-1",
-     "S3Key": "6fc514043ce6042d5247923db736014739074d33feb581816dfa984599252f11.zip"
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "229285dbb0470bb7613f2247a34adacfd0f91834e6ae00752446723d0b1c1962.zip"
     },
     "Environment": {
      "Variables": {
@@ -3116,7 +2840,8 @@
       },
       "REMEDIATION_STATE_MACHINE_ARN": {
        "Ref": "RemediationStateMachine769D94C7"
-      }
+      },
+      "REMEDIATION_EXECUTION_ENABLED": "false"
      }
     },
     "Handler": "index.handler",
@@ -3136,7 +2861,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "CascadePreventionStack/RemediationPlannerFunction/Resource",
-    "aws:asset:path": "asset.6fc514043ce6042d5247923db736014739074d33feb581816dfa984599252f11",
+    "aws:asset:path": "asset.229285dbb0470bb7613f2247a34adacfd0f91834e6ae00752446723d0b1c1962",
     "aws:asset:is-bundled": true,
     "aws:asset:property": "Code"
    }
@@ -3254,17 +2979,17 @@
   "CascadePreventionApiC1B264F4": {
    "Type": "AWS::ApiGateway::RestApi",
    "Properties": {
-    "Description": "MVP API for cascade prevention telemetry and operator interfaces",
+    "Description": "Enterprise foundation API for cascade-risk telemetry and governed operator actions",
     "Name": "CascadePreventionApi"
    },
    "Metadata": {
     "aws:cdk:path": "CascadePreventionStack/CascadePreventionApi/Resource"
    }
   },
-  "CascadePreventionApiDeploymentF8AFB88511edcbe92d147bf83bef851bfda9db8f": {
+  "CascadePreventionApiDeploymentF8AFB8859fa2b2a66f95f9194054a928d8698ca9": {
    "Type": "AWS::ApiGateway::Deployment",
    "Properties": {
-    "Description": "MVP API for cascade prevention telemetry and operator interfaces",
+    "Description": "Enterprise foundation API for cascade-risk telemetry and governed operator actions",
     "RestApiId": {
      "Ref": "CascadePreventionApiC1B264F4"
     }
@@ -3303,7 +3028,7 @@
    "Type": "AWS::ApiGateway::Stage",
    "Properties": {
     "DeploymentId": {
-     "Ref": "CascadePreventionApiDeploymentF8AFB88511edcbe92d147bf83bef851bfda9db8f"
+     "Ref": "CascadePreventionApiDeploymentF8AFB8859fa2b2a66f95f9194054a928d8698ca9"
     },
     "RestApiId": {
      "Ref": "CascadePreventionApiC1B264F4"
@@ -3325,7 +3050,8 @@
       {
        "ResponseParameters": {
         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
-        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://aicpe.dev'",
+        "method.response.header.Vary": "'Origin'",
         "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
        },
        "StatusCode": "204"
@@ -3341,6 +3067,7 @@
       "ResponseParameters": {
        "method.response.header.Access-Control-Allow-Headers": true,
        "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
        "method.response.header.Access-Control-Allow-Methods": true
       },
       "StatusCode": "204"
@@ -3389,7 +3116,8 @@
       {
        "ResponseParameters": {
         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
-        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://aicpe.dev'",
+        "method.response.header.Vary": "'Origin'",
         "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
        },
        "StatusCode": "204"
@@ -3405,6 +3133,7 @@
       "ResponseParameters": {
        "method.response.header.Access-Control-Allow-Headers": true,
        "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
        "method.response.header.Access-Control-Allow-Methods": true
       },
       "StatusCode": "204"
@@ -3447,7 +3176,8 @@
       {
        "ResponseParameters": {
         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
-        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://aicpe.dev'",
+        "method.response.header.Vary": "'Origin'",
         "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
        },
        "StatusCode": "204"
@@ -3463,6 +3193,7 @@
       "ResponseParameters": {
        "method.response.header.Access-Control-Allow-Headers": true,
        "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
        "method.response.header.Access-Control-Allow-Methods": true
       },
       "StatusCode": "204"
@@ -3494,7 +3225,19 @@
      "Fn::Join": [
       "",
       [
-       "arn:aws:execute-api:us-east-1:593688888943:",
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -3526,7 +3269,19 @@
      "Fn::Join": [
       "",
       [
-       "arn:aws:execute-api:us-east-1:593688888943:",
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -3551,7 +3306,15 @@
       "Fn::Join": [
        "",
        [
-        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":apigateway:",
+        {
+         "Ref": "AWS::Region"
+        },
+        ":lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
           "TelemetryIngestFunction64DF56ED",
@@ -3603,7 +3366,8 @@
       {
        "ResponseParameters": {
         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
-        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://aicpe.dev'",
+        "method.response.header.Vary": "'Origin'",
         "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
        },
        "StatusCode": "204"
@@ -3619,6 +3383,7 @@
       "ResponseParameters": {
        "method.response.header.Access-Control-Allow-Headers": true,
        "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
        "method.response.header.Access-Control-Allow-Methods": true
       },
       "StatusCode": "204"
@@ -3650,7 +3415,19 @@
      "Fn::Join": [
       "",
       [
-       "arn:aws:execute-api:us-east-1:593688888943:",
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -3682,7 +3459,19 @@
      "Fn::Join": [
       "",
       [
-       "arn:aws:execute-api:us-east-1:593688888943:",
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -3711,7 +3500,15 @@
       "Fn::Join": [
        "",
        [
-        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":apigateway:",
+        {
+         "Ref": "AWS::Region"
+        },
+        ":lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
           "CascadeApiFunctionA3D6FDC5",
@@ -3763,7 +3560,8 @@
       {
        "ResponseParameters": {
         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
-        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://aicpe.dev'",
+        "method.response.header.Vary": "'Origin'",
         "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
        },
        "StatusCode": "204"
@@ -3779,6 +3577,7 @@
       "ResponseParameters": {
        "method.response.header.Access-Control-Allow-Headers": true,
        "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
        "method.response.header.Access-Control-Allow-Methods": true
       },
       "StatusCode": "204"
@@ -3821,7 +3620,8 @@
       {
        "ResponseParameters": {
         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
-        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://aicpe.dev'",
+        "method.response.header.Vary": "'Origin'",
         "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
        },
        "StatusCode": "204"
@@ -3837,6 +3637,7 @@
       "ResponseParameters": {
        "method.response.header.Access-Control-Allow-Headers": true,
        "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
        "method.response.header.Access-Control-Allow-Methods": true
       },
       "StatusCode": "204"
@@ -3868,7 +3669,19 @@
      "Fn::Join": [
       "",
       [
-       "arn:aws:execute-api:us-east-1:593688888943:",
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -3900,7 +3713,19 @@
      "Fn::Join": [
       "",
       [
-       "arn:aws:execute-api:us-east-1:593688888943:",
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -3929,7 +3754,15 @@
       "Fn::Join": [
        "",
        [
-        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":apigateway:",
+        {
+         "Ref": "AWS::Region"
+        },
+        ":lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
           "CascadeApiFunctionA3D6FDC5",
@@ -3981,7 +3814,8 @@
       {
        "ResponseParameters": {
         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
-        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://aicpe.dev'",
+        "method.response.header.Vary": "'Origin'",
         "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
        },
        "StatusCode": "204"
@@ -3997,6 +3831,7 @@
       "ResponseParameters": {
        "method.response.header.Access-Control-Allow-Headers": true,
        "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
        "method.response.header.Access-Control-Allow-Methods": true
       },
       "StatusCode": "204"
@@ -4028,7 +3863,19 @@
      "Fn::Join": [
       "",
       [
-       "arn:aws:execute-api:us-east-1:593688888943:",
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -4060,7 +3907,19 @@
      "Fn::Join": [
       "",
       [
-       "arn:aws:execute-api:us-east-1:593688888943:",
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -4089,7 +3948,15 @@
       "Fn::Join": [
        "",
        [
-        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":apigateway:",
+        {
+         "Ref": "AWS::Region"
+        },
+        ":lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
           "CascadeApiFunctionA3D6FDC5",
@@ -4138,7 +4005,8 @@
       {
        "ResponseParameters": {
         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
-        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://aicpe.dev'",
+        "method.response.header.Vary": "'Origin'",
         "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
        },
        "StatusCode": "204"
@@ -4154,6 +4022,7 @@
       "ResponseParameters": {
        "method.response.header.Access-Control-Allow-Headers": true,
        "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
        "method.response.header.Access-Control-Allow-Methods": true
       },
       "StatusCode": "204"
@@ -4196,7 +4065,8 @@
       {
        "ResponseParameters": {
         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,X-Api-Key'",
-        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Origin": "'https://aicpe.dev'",
+        "method.response.header.Vary": "'Origin'",
         "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
        },
        "StatusCode": "204"
@@ -4212,6 +4082,7 @@
       "ResponseParameters": {
        "method.response.header.Access-Control-Allow-Headers": true,
        "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Vary": true,
        "method.response.header.Access-Control-Allow-Methods": true
       },
       "StatusCode": "204"
@@ -4243,7 +4114,19 @@
      "Fn::Join": [
       "",
       [
-       "arn:aws:execute-api:us-east-1:593688888943:",
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -4275,7 +4158,19 @@
      "Fn::Join": [
       "",
       [
-       "arn:aws:execute-api:us-east-1:593688888943:",
+       "arn:",
+       {
+        "Ref": "AWS::Partition"
+       },
+       ":execute-api:",
+       {
+        "Ref": "AWS::Region"
+       },
+       ":",
+       {
+        "Ref": "AWS::AccountId"
+       },
+       ":",
        {
         "Ref": "CascadePreventionApiC1B264F4"
        },
@@ -4304,7 +4199,15 @@
       "Fn::Join": [
        "",
        [
-        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":apigateway:",
+        {
+         "Ref": "AWS::Region"
+        },
+        ":lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
           "CascadeApiFunctionA3D6FDC5",
@@ -4712,7 +4615,20 @@
    }
   },
   "OperationsConsoleUrl": {
-   "Value": "https://aicpe.dev"
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Fn::GetAtt": [
+        "OperationsConsoleDistribution9384F8A9",
+        "DomainName"
+       ]
+      }
+     ]
+    ]
+   }
   },
   "ArticleSiteBucketName": {
    "Value": {
@@ -4728,7 +4644,20 @@
    }
   },
   "ArticleSiteUrl": {
-   "Value": "https://article.aicpe.dev"
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "https://",
+      {
+       "Fn::GetAtt": [
+        "ArticleSiteDistributionBC7D0080",
+        "DomainName"
+       ]
+      }
+     ]
+    ]
+   }
   },
   "CascadePreventionApiEndpoint7176775B": {
    "Value": {
@@ -4739,7 +4668,11 @@
       {
        "Ref": "CascadePreventionApiC1B264F4"
       },
-      ".execute-api.us-east-1.",
+      ".execute-api.",
+      {
+       "Ref": "AWS::Region"
+      },
+      ".",
       {
        "Ref": "AWS::URLSuffix"
       },
@@ -4776,7 +4709,11 @@
       {
        "Ref": "CascadePreventionApiC1B264F4"
       },
-      ".execute-api.us-east-1.",
+      ".execute-api.",
+      {
+       "Ref": "AWS::Region"
+      },
+      ".",
       {
        "Ref": "AWS::URLSuffix"
       },
@@ -4787,16 +4724,6 @@
       "/"
      ]
     ]
-   }
-  }
- },
- "Mappings": {
-  "AWSCloudFrontPartitionHostedZoneIdMap": {
-   "aws": {
-    "zoneId": "Z2FDTNDATAQYW2"
-   },
-   "aws-cn": {
-    "zoneId": "Z3RFFRIM2A3IF5"
    }
   }
  },

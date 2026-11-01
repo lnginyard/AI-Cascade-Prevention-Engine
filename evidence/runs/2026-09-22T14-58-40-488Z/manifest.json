@@ -1,0 +1,8 @@
+{
+  "runId": "2026-09-22T14-58-40-488Z",
+  "evidenceType": "deterministic_replay",
+  "scenarioSchemaVersion": "1.0",
+  "generatedAt": "2026-09-22T14:58:40.489Z",
+  "sourceScenarioFile": "evidence/scenarios.json",
+  "limitation": "This report proves behavior on the versioned scenarios only. It does not prove production accuracy, avoided loss, or causal prevention without timestamped AWS telemetry and an outcome record."
+}

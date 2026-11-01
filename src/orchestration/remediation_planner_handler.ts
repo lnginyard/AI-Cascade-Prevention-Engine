@@ -138,7 +138,8 @@ export async function handler(event: EventBridgeEvent<'CascadePathPredicted', Pr
 
   await emitPlanGenerated(plan, eventBusName);
 
-  if (stateMachineArn && plan.actions.length >= 3) {
+  const executionEnabled = process.env.REMEDIATION_EXECUTION_ENABLED !== 'false';
+  if (executionEnabled && stateMachineArn && plan.actions.length >= 3) {
     await sfn.send(new StartExecutionCommand({
       stateMachineArn,
       input: JSON.stringify({
