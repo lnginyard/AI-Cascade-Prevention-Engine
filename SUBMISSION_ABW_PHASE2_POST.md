@@ -4,6 +4,8 @@
 
 ## AWS All Builders Welcome Community Post
 
+**Created and published by Lorenzo Ginyard**
+
 I am excited to share that I progressed to **Round 2** of AWS 10,000 AIdeas.
 
 Live links:

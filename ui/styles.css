@@ -405,6 +405,21 @@ body[data-text-size='xlarge'] {
   animation: subTitleGlow 2.8s ease-in-out infinite;
 }
 
+.project-credit {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid rgba(108, 157, 203, 0.22);
+  color: rgba(150, 183, 223, 0.78);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.project-credit strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* BRAND ANIMATIONS - Dynamic, Eye-Catching, Protection & Detection Themed     */
 /* ═══════════════════════════════════════════════════════════════════════════ */

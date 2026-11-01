@@ -1,6 +1,8 @@
 # Cascade Prevention Engine — Submission Package
 ## Deadline: March 12, 2026
 
+**Project creator and publisher:** Lorenzo Ginyard
+
 ---
 
 ## Project Overview (Elevator Pitch)

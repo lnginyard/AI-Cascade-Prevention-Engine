@@ -1,5 +1,7 @@
 # Blog Article — Ready to Publish
 
+**Author:** Lorenzo Ginyard
+
 **Title:** Cascade Prevention Engine: Predictive Control for AWS Failure Cascades
 
 **Subtitle:** How I designed a serverless prevention engine that watches your dependency graph, detects early cascade signatures, and automatically intervenes — all on AWS free tier.

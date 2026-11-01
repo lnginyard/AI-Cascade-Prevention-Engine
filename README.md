@@ -6,6 +6,8 @@ A research and engineering prototype exploring how telemetry, rule-based cascade
 - **Interactive demonstration:** [Cascade Prevention Dashboard](https://github.com/lnginyard/Cascade-Prevention-App)
 - **Project domain:** [aicpe.dev](https://aicpe.dev) · [The AICPE article site](https://article.aicpe.dev) (availability and current deployment should be verified before relying on these links).
 
+**Created and published by Lorenzo Ginyard**
+
 ## Project status
 
 This is an **early MVP / foundation**, not a production-ready autonomous incident-prevention platform. The repository's conformance report records that the developer build, test, and CDK synthesis workflows were run successfully during its audit, while also noting that requirements coverage is partial and test coverage is narrow. Review the implementation and current CI results before treating any behavior as production-verified.
