@@ -10,6 +10,7 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as kms from 'aws-cdk-lib/aws-kms';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import * as s3 from 'aws-cdk-lib/aws-s3';
@@ -29,10 +30,10 @@ const stack = new cdk.Stack(app, 'CascadePreventionStack', cdkAccount && cdkRegi
 	? { env: { account: cdkAccount, region: cdkRegion } }
 	: undefined);
 
-function parseCsvContext(value: string | undefined): string[] {
+function parseCsvContext(value: string | string[] | undefined): string[] {
 	if (!value) return [];
-	return value
-		.split(',')
+	const values = Array.isArray(value) ? value : value.split(',');
+	return values
 		.map((item) => item.trim())
 		.filter((item) => item.length > 0);
 }
@@ -41,9 +42,11 @@ const configuredWebhookUrl = app.node.tryGetContext('webhookUrl') as string | un
 const configuredSlackWebhookUrl = app.node.tryGetContext('slackWebhookUrl') as string | undefined;
 const configuredTeamsWebhookUrl = app.node.tryGetContext('teamsWebhookUrl') as string | undefined;
 const configuredStatuspageWebhookUrl = app.node.tryGetContext('statuspageWebhookUrl') as string | undefined;
+const configuredAllowedOrigins = parseCsvContext(app.node.tryGetContext('allowedOrigins') as string | string[] | undefined);
 const configuredExecutiveEmails = parseCsvContext(app.node.tryGetContext('executiveEmails') as string | undefined);
 const configuredStakeholderEmails = parseCsvContext(app.node.tryGetContext('stakeholderEmails') as string | undefined);
 const configuredStakeholderSms = parseCsvContext(app.node.tryGetContext('stakeholderSms') as string | undefined);
+const remediationExecutionEnabled = app.node.tryGetContext('remediationExecutionEnabled') === true;
 const webhookUrl = configuredWebhookUrl ?? '';
 const slackWebhookUrl = configuredSlackWebhookUrl ?? '';
 const teamsWebhookUrl = configuredTeamsWebhookUrl ?? '';
@@ -54,6 +57,7 @@ const contextUiHostedZoneDomain = app.node.tryGetContext('uiHostedZoneDomain') a
 const contextArticleDomainName = app.node.tryGetContext('articleDomainName') as string | undefined;
 const contextArticleHostedZoneDomain = app.node.tryGetContext('articleHostedZoneDomain') as string | undefined;
 const canUseCustomDomains = Boolean(cdkAccount && cdkRegion);
+const allowedOrigins = configuredAllowedOrigins.length > 0 ? configuredAllowedOrigins : ['https://aicpe.dev'];
 
 if (!canUseCustomDomains && (contextUiDomainName || contextArticleDomainName)) {
 	console.warn('Custom domain context detected, but CDK_DEFAULT_ACCOUNT/CDK_DEFAULT_REGION are not set. Falling back to CloudFront domains for synth.');
@@ -211,10 +215,23 @@ const telemetryCacheTable = included.getResource('TelemetryCacheD29A0395') as dy
 const dependencyGraphTable = included.getResource('DependencyGraph3324833E') as dynamodb.CfnTable;
 const signaturesTable = included.getResource('SignaturesTable79733A9C') as dynamodb.CfnTable;
 const eventBus = included.getResource('EventBus7B8748AA') as events.CfnEventBus;
+const encryptionKey = included.getResource('EncryptionKey1B843E66') as kms.CfnKey;
 
 const remediationPlansTable = new dynamodb.Table(stack, 'RemediationPlansTable', {
 	tableName: 'CascadePrevention-RemediationPlans',
 	partitionKey: { name: 'planId', type: dynamodb.AttributeType.STRING },
+	billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+	pointInTimeRecoverySpecification: {
+		pointInTimeRecoveryEnabled: true,
+	},
+	encryption: dynamodb.TableEncryption.AWS_MANAGED,
+	removalPolicy: cdk.RemovalPolicy.RETAIN,
+});
+
+const auditEventsTable = new dynamodb.Table(stack, 'AuditEventsTable', {
+	tableName: 'CascadePrevention-AuditEvents',
+	partitionKey: { name: 'tenantId', type: dynamodb.AttributeType.STRING },
+	sortKey: { name: 'eventKey', type: dynamodb.AttributeType.STRING },
 	billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
 	pointInTimeRecoverySpecification: {
 		pointInTimeRecoveryEnabled: true,
@@ -254,6 +271,10 @@ telemetryIngestFunction.addToRolePolicy(new iam.PolicyStatement({
 	resources: [`${telemetryBucket.attrArn}/*`],
 }));
 telemetryIngestFunction.addToRolePolicy(new iam.PolicyStatement({
+	actions: ['kms:GenerateDataKey', 'kms:Decrypt'],
+	resources: [encryptionKey.attrArn],
+}));
+telemetryIngestFunction.addToRolePolicy(new iam.PolicyStatement({
 	actions: ['events:PutEvents'],
 	resources: [eventBus.getAtt('Arn').toString()],
 }));
@@ -280,6 +301,10 @@ signatureMatcherV2Function.addToRolePolicy(new iam.PolicyStatement({
 	resources: [signaturesTable.attrArn],
 }));
 signatureMatcherV2Function.addToRolePolicy(new iam.PolicyStatement({
+	actions: ['kms:Decrypt', 'kms:GenerateDataKey'],
+	resources: [encryptionKey.attrArn],
+}));
+signatureMatcherV2Function.addToRolePolicy(new iam.PolicyStatement({
 	actions: ['events:PutEvents'],
 	resources: [eventBus.getAtt('Arn').toString()],
 }));
@@ -304,6 +329,7 @@ const apiFunction = new NodejsFunction(stack, 'CascadeApiFunction', {
 		DEPENDENCY_GRAPH_TABLE: dependencyGraphTable.ref,
 		SIGNATURES_TABLE_NAME: signaturesTable.ref,
 		REMEDIATION_PLANS_TABLE: remediationPlansTable.tableName,
+		AUDIT_EVENTS_TABLE: auditEventsTable.tableName,
 		EVENT_BUS_NAME: eventBus.ref,
 		ALERT_TOPIC_ARN: cascadeAlertsTopic.topicArn,
 	},
@@ -315,6 +341,7 @@ apiFunction.addToRolePolicy(new iam.PolicyStatement({
 		dependencyGraphTable.attrArn,
 		signaturesTable.attrArn,
 		remediationPlansTable.tableArn,
+		auditEventsTable.tableArn,
 	],
 }));
 apiFunction.addToRolePolicy(new iam.PolicyStatement({
@@ -404,6 +431,7 @@ const remediationPlannerFunction = new NodejsFunction(stack, 'RemediationPlanner
 		REMEDIATION_PLANS_TABLE: remediationPlansTable.tableName,
 		EVENT_BUS_NAME: eventBus.ref,
 		REMEDIATION_STATE_MACHINE_ARN: remediationStateMachine.stateMachineArn,
+		REMEDIATION_EXECUTION_ENABLED: String(remediationExecutionEnabled),
 	},
 });
 remediationPlannerFunction.addToRolePolicy(new iam.PolicyStatement({
@@ -447,10 +475,10 @@ integrationEventRule.addTarget(new targets.LambdaFunction(webhookNotifierFunctio
 
 const api = new apigateway.RestApi(stack, 'CascadePreventionApi', {
 	restApiName: 'CascadePreventionApi',
-	description: 'MVP API for cascade prevention telemetry and operator interfaces',
+	description: 'Enterprise foundation API for cascade-risk telemetry and governed operator actions',
 	deployOptions: { stageName: 'v1' },
 	defaultCorsPreflightOptions: {
-		allowOrigins: apigateway.Cors.ALL_ORIGINS,
+		allowOrigins: allowedOrigins,
 		allowMethods: apigateway.Cors.ALL_METHODS,
 		allowHeaders: ['Content-Type', 'Authorization', 'X-Api-Key'],
 	},

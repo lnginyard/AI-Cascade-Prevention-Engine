@@ -3,6 +3,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { handleAiChat } from './ai_chat_handler';
+import { randomUUID } from 'crypto';
 
 const region = process.env.AWS_REGION || 'us-east-1';
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({ region }));
@@ -18,6 +19,14 @@ function json(statusCode: number, payload: unknown): APIGatewayProxyResult {
       'access-control-allow-methods': 'GET,POST,OPTIONS',
     },
     body: JSON.stringify(payload),
+  };
+}
+
+function getActor(event: APIGatewayProxyEvent): { tenantId: string; actorId: string } {
+  const claims = event.requestContext.authorizer?.claims as Record<string, string> | undefined;
+  return {
+    tenantId: claims?.['custom:tenantId'] || process.env.DEFAULT_TENANT_ID || 'default',
+    actorId: claims?.sub || claims?.email || 'authenticated-user',
   };
 }
 
@@ -63,14 +72,26 @@ async function getRemediationPlans(): Promise<APIGatewayProxyResult> {
 async function approveRemediationPlan(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   const tableName = process.env.REMEDIATION_PLANS_TABLE;
   const eventBusName = process.env.EVENT_BUS_NAME;
+  const auditTableName = process.env.AUDIT_EVENTS_TABLE;
   if (!tableName) return json(500, { message: 'REMEDIATION_PLANS_TABLE is not configured' });
 
   const planId = event.pathParameters?.planId;
   if (!planId) return json(400, { message: 'Missing planId path parameter' });
 
-  const parsedBody = event.body ? JSON.parse(event.body) : {};
-  const approved = parsedBody.approved === true;
-  const reviewer = parsedBody.reviewer || 'unknown';
+  let parsedBody: { approved?: unknown; reason?: unknown };
+  try {
+    parsedBody = event.body ? JSON.parse(event.body) : {};
+  } catch {
+    return json(400, { message: 'Request body must be valid JSON' });
+  }
+
+  if (typeof parsedBody.approved !== 'boolean') {
+    return json(400, { message: 'approved must be a boolean' });
+  }
+
+  const { tenantId, actorId } = getActor(event);
+  const approved = parsedBody.approved;
+  const reviewer = actorId;
   const reason = parsedBody.reason || null;
 
   const existing = await dynamo.send(new GetCommand({
@@ -97,6 +118,22 @@ async function approveRemediationPlan(event: APIGatewayProxyEvent): Promise<APIG
     TableName: tableName,
     Item: updated,
   }));
+
+  if (auditTableName) {
+    await dynamo.send(new PutCommand({
+      TableName: auditTableName,
+      Item: {
+        tenantId,
+        eventKey: `${updated.approval.at}#${randomUUID()}`,
+        eventType: 'REMEDIATION_PLAN_REVIEWED',
+        actorId,
+        resourceId: planId,
+        outcome: updated.status,
+        reason,
+        occurredAt: updated.approval.at,
+      },
+    }));
+  }
 
   if (eventBusName) {
     await eventBridge.send(new PutEventsCommand({

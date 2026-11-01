@@ -1,6 +1,8 @@
 # Deployment Guide
 
-This guide covers deploying the Cascade Prevention Engine infrastructure using AWS CDK.
+This guide covers deploying the Cascade Prevention Engine as an AWS-hosted, single-company enterprise foundation using AWS CDK.
+
+The default deployment posture is advisory: remediation execution is disabled until the operating team has reviewed policies, integrations, rollback behavior, and audit requirements. Do not enable automated actions in a customer environment without an approved runbook and a tested recovery path.
 
 ## Prerequisites
 
@@ -93,6 +95,25 @@ cdk deploy \
   --context snapshotRetentionDays=90 \
   --context environment=production
 ```
+
+### Enterprise safety configuration
+
+Set explicit origins for the operations console instead of allowing browser access from arbitrary sites:
+
+```bash
+cdk deploy \
+  --context allowedOrigins='["https://console.example.com"]' \
+  --context remediationExecutionEnabled=false
+```
+
+The stack provisions a retained, encrypted `CascadePrevention-AuditEvents` table. Approval records capture the authenticated Cognito subject, tenant claim (when configured), outcome, reason, resource, and timestamp. The reviewer value supplied by a browser request is not trusted.
+
+For a controlled production enablement, change `remediationExecutionEnabled` only after:
+
+1. advisory-mode detection and notification has been validated;
+2. action policies and allowed targets have been reviewed;
+3. rollback behavior has been tested in a representative environment;
+4. an emergency disable procedure and on-call ownership are documented.
 
 Or add them to `cdk.json`:
 

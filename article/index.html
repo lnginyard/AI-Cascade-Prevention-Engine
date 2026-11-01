@@ -1717,17 +1717,17 @@ body.reduced-motion *::after {
 <!-- ══════════════════════════════════════ DEPLOYMENT ══ -->
 <section class="section" id="deployment">
   <div class="section-kicker">11 · Deployment &amp; Operations</div>
-  <h2 class="section-title">One Command to Production</h2>
-  <p class="section-lead">From zero to a running resilience layer in under 15 minutes with built-in cost guardrails.</p>
+  <h2 class="section-title">A Governed Path to Production</h2>
+  <p class="section-lead">A governed rollout path from evaluation to an enterprise resilience operating layer.</p>
 
   <div class="dual-block reveal">
     <div class="dual-panel exec">
       <div class="dual-label">🏢 For Decision Makers</div>
-      <p>The system is designed for a gradual rollout. Start with a single AWS region in "free-tier mode" — which automatically sets budget alerts to prevent unexpected costs — validate that it's working for your environment, and then expand to multi-region coverage. There are no vendor-managed agents to install on your services, no SDKs to integrate, and no architectural changes required to your existing applications. It observes your existing AWS infrastructure non-invasively.</p>
+      <p>The system is designed for a gradual enterprise rollout. Start in one AWS region with advisory controls, validate detection quality and remediation policies against your environment, and then expand coverage. There are no vendor-managed agents to install on your services, no SDKs to integrate, and no architectural changes required to your existing applications. It observes your existing AWS infrastructure non-invasively.</p>
     </div>
     <div class="dual-panel tech">
       <div class="dual-label">⚙️ Technical Implementation</div>
-      <p>Prerequisites: Node.js 18+, AWS CLI with SSO profile, CDK CLI. The <strong>free-tier:start</strong> script runs validation → CDK bootstrap → budget guardrails (AWS Budgets + SNS) → single-region stack deployment in sequence. The <strong>free-tier:status</strong> command performs identity checks, stack output discovery, API endpoint health probes (with optional authenticated checks), and dependency graph connectivity tests. Multi-region expansion sets <strong>multiRegion: true</strong> in <code>cdk.json</code> and requires manual S3 cross-region replication role configuration.</p>
+      <p>Prerequisites: Node.js 18+, AWS CLI with SSO profile, CDK CLI, and an approved production account. Deploy with explicit environment configuration, restricted origins, retained data stores, audit logging, and remediation execution disabled until policy validation is complete. Multi-region expansion sets <strong>multiRegion: true</strong> in <code>cdk.json</code> and requires manual S3 cross-region replication role configuration.</p>
     </div>
   </div>
 
@@ -1735,7 +1735,7 @@ body.reduced-motion *::after {
   <h3 class="reveal deployment-modes-title">Deployment Modes</h3>
   <div class="compare-grid reveal">
     <div class="compare-card">
-      <div class="compare-title">Free-Tier MVP</div>
+      <div class="compare-title">Advisory Evaluation</div>
       <div class="compare-price">1</div>
       <div class="compare-sub">Region · Evaluation</div>
       <ul class="compare-features">
@@ -1789,7 +1789,7 @@ body.reduced-motion *::after {
   </div>
 
   <div class="callout success reveal">
-    <p><strong>Cost control built in:</strong> The free-tier deployment mode automatically provisions an AWS Budget with SNS alerting before deploying any resources. You set the monthly limit — the system enforces it. Run <code>npm run free-tier:destroy</code> to tear down all resources and eliminate idle costs when not evaluating.</p>
+    <p><strong>Safety first:</strong> Remediation execution is disabled by default. Begin with advisory mode, validate policies and integrations, review audit events, and enable automated actions only after the operating team has approved the environment-specific controls.</p>
   </div>
 </section>
 

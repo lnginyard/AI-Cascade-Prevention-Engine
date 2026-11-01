@@ -1,7 +1,7 @@
 {
   "name": "cascade-prevention-engine",
   "version": "1.0.0",
-  "description": "AI-driven resilience layer for AWS workloads that predicts and prevents cascading failures",
+  "description": "Enterprise foundation for detecting and safely coordinating AWS cascade-risk remediation",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
