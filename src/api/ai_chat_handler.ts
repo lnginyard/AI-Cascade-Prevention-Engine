@@ -152,50 +152,51 @@ async function saveChatMessage(sessionId: string, role: 'user' | 'assistant', co
   }
 }
 
+function splitQuestions(message: string): string[] {
+  return message.split(/\n+|(?<=[?])\s+/).map((part) => part.trim()).filter(Boolean).slice(0, 8);
+}
+
+function answerQuestion(question: string): string {
+  const lowerMessage = question.toLowerCase();
+
+  if (/\b(hello|hi|hey|help|what can you do)\b/.test(lowerMessage)) {
+    return 'I can help with this dashboard, cascade prevention, engineering, operations, business planning, security, compliance, people, finance, and general decision-making. I can also answer several questions in one message.';
+  }
+  if (/\b(cascade|propagate|spread|blast radius|dependency)\b/.test(lowerMessage)) {
+    return 'Cascade analysis: identify the origin service, inspect queue depth, latency, errors, retries, and saturation, then trace dependent services outward. Contain the highest-risk edge first, preserve rollback, and use advisory mode before approving circuit breaking or traffic shaping.';
+  }
+  if (/\b(business|impact|revenue|customer|profit|roi|cost)\b/.test(lowerMessage)) {
+    return 'Business analysis: connect the signal to customer journeys, transaction volume, revenue exposure, SLA commitments, staffing capacity, and operational queues. Compare the cost of containment, delay, and customer harm before choosing a response.';
+  }
+  if (/\b(region|regional|failover|disaster|outage|availability|recovery|backup)\b/.test(lowerMessage)) {
+    return 'Resilience guidance: compare health, latency, replication lag, capacity, and data consistency across regions. Test failover and rollback with representative traffic, define recovery objectives, and keep high-impact actions advisory until evidence is clear.';
+  }
+  if (/\b(mitigat|prevent|remediat|fix|solve|reduce risk|protect)\b/.test(lowerMessage)) {
+    return 'Mitigation guidance: start with the least disruptive reversible control, such as rate limiting, queue isolation, or workload prioritization. Require approval for high-risk changes, verify expected metric movement, and record the decision and rollback condition.';
+  }
+  if (/\b(compliance|regulat|audit|privacy|gdpr|hipaa|soc ?2|policy|sla)\b/.test(lowerMessage)) {
+    return 'Governance guidance: preserve an immutable decision trail, document the policy and approver, minimize sensitive data, respect residency and retention requirements, and verify that the response does not violate an SLA or control boundary.';
+  }
+  if (/\b(code|program|software|api|database|aws|cloud|deploy|test|bug|debug|technical)\b/.test(lowerMessage)) {
+    return 'Technical guidance: define expected behavior, isolate the smallest reproducible case, inspect logs and metrics for the same time window, make one reversible change, and validate it with a focused test before rollout. Include timeout, retry, authentication, and failure-path behavior.';
+  }
+  if (/\b(team|staff|people|employee|hiring|leadership|culture|workload|project)\b/.test(lowerMessage)) {
+    return 'People and operations guidance: clarify ownership, capacity, decision rights, and the next measurable outcome. Avoid shifting critical work to an overloaded team; use an escalation path and communicate tradeoffs to stakeholders.';
+  }
+  if (/\b(logistics|supply|transport|shipping|inventory|warehouse|vendor)\b/.test(lowerMessage)) {
+    return 'Operations guidance: monitor lead time, throughput, backlog, carrier or vendor availability, and customer priority together. Protect constrained capacity for the highest-value commitments and establish a fallback route.';
+  }
+  if (/\b(question|why|how|what|when|where|should|can|could|would)\b/.test(lowerMessage)) {
+    return 'A practical way to answer this is to clarify the desired outcome, constraints, evidence, and acceptable risk. Compare two or three options, choose a reversible next step, define a success measure, and review the result before committing further.';
+  }
+  return 'I need more context to make a specific claim. Share the goal, current situation, constraints, stakeholders, and desired outcome; I can turn that into options, risks, and next steps.';
+}
+
 function generateAiResponse(userMessage: string): string {
-  const lowerMessage = userMessage.toLowerCase();
-  
-  if (lowerMessage.includes('cascade') || lowerMessage.includes('propagate') || lowerMessage.includes('spread')) {
-    return `Cascade failure analysis: Failures typically spread through dependency chains. Early detection of queue saturation, latency amplification, or regional failover drift enables preventive action. The system monitors technical and business domains to assess combined risk. Recommend scanning for unusual correlation patterns across metrics.`;
-  }
-
-  if (lowerMessage.includes('business') || lowerMessage.includes('impact') || lowerMessage.includes('revenue')) {
-    return `Business impact assessment: Cascades create multi-domain effects—technical failures trigger operational delays, logistics bottlenecks, staffing stress, and ultimately revenue loss. Early warning across all domains enables mitigation before customer harm.`;
-  }
-
-  if (lowerMessage.includes('staff') || lowerMessage.includes('team') || lowerMessage.includes('people') || lowerMessage.includes('culture')) {
-    return `Staffing resilience: Team fatigue and high absence rates worsen cascade response. Monitor psychological safety, overtime trends, and engagement alongside technical metrics. Mitigation must account for team capacity.`;
-  }
-
-  if (lowerMessage.includes('logistics') || lowerMessage.includes('supply') || lowerMessage.includes('transportation') || lowerMessage.includes('shipping')) {
-    return `Supply chain analysis: Lead time inflation and carrier unavailability cascade into fulfillment delays and customer dissatisfaction. Early logistical signal detection enables preemptive routing and communication.`;
-  }
-
-  if (lowerMessage.includes('region') || lowerMessage.includes('failover') || lowerMessage.includes('regional')) {
-    return `Regional resilience: Geographic diversity protects against regional outages. Monitor health and data consistency continuously. Latency drift and replication lag are predictive signals for failover risk.`;
-  }
-
-  if (lowerMessage.includes('detect') || lowerMessage.includes('early') || lowerMessage.includes('prediction')) {
-    return `Early detection: The Engine monitors financial, operational, and cultural metrics alongside technical signals. Signature detection identifies pre-cascade conditions with confidence scoring. Real-time assessment enables 15-45 minute warning windows.`;
-  }
-
-  if (lowerMessage.includes('mitigation') || lowerMessage.includes('prevent') || lowerMessage.includes('remediation')) {
-    return `Mitigation strategies: Infrastructure cascades use circuit breakers and throttling. Operational cascades use process prioritization and reallocation. Cultural cascades use team support and workload adjustment. Effective mitigation requires tested playbooks and rapid approval workflows.`;
-  }
-
-  if (lowerMessage.includes('compliance') || lowerMessage.includes('regulatory') || lowerMessage.includes('audit') || lowerMessage.includes('sla')) {
-    return `Compliance considerations: SLA obligations and audit requirements limit remediation options. Data residency failures require immediate containment. Playbooks must preserve audit trails and account for regulatory constraints.`;
-  }
-
-  if (lowerMessage.includes('finance') || lowerMessage.includes('cash') || lowerMessage.includes('margin') || lowerMessage.includes('cost')) {
-    return `Financial impact: Cascades create measurable losses—refunds, lost orders, penalties, emergency costs. Model revenue sensitivity to scenarios. Prevention ROI justifies investment in early detection infrastructure.`;
-  }
-
-  if (lowerMessage.includes('health') || lowerMessage.includes('wellness') || lowerMessage.includes('facility')) {
-    return `Health and wellness: Facility capacity constraints, illness rates, and team welfare affect operational response capacity. Monitor health metrics and coordinate with occupational teams in mitigation planning.`;
-  }
-
-  return `The Cascade Prevention Engine integrates business and technical intelligence. Effective prevention requires cross-functional visibility: technical metrics (latency, errors, resources), operational metrics (throughput, quality), staffing metrics (capacity, engagement), and financial metrics (revenue, margins). Early detection feeds predictive models. Mitigation executes with 15-30 second latency. What cascade scenario would you like to explore?`;
+  const questions = splitQuestions(userMessage);
+  return questions.length === 1
+    ? answerQuestion(questions[0])
+    : questions.map((question, index) => `${index + 1}. ${answerQuestion(question)}`).join('\n\n');
 }
 
 export async function handleAiChat(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {

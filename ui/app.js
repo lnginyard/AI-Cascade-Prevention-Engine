@@ -207,8 +207,10 @@ function initializePreferences() {
   const apiKey = document.getElementById('apiKey');
   const bearerToken = document.getElementById('bearerToken');
 
-  const defaultApiBaseUrl = `${window.location.origin}/v1`;
-  const savedApiBaseUrl = localStorage.getItem('cascade-live-api-base-url') || defaultApiBaseUrl;
+  const defaultApiBaseUrl = window.location.protocol === 'file:' ? '' : `${window.location.origin}/v1`;
+  const savedApiBaseUrl = window.location.protocol === 'file:'
+    ? ''
+    : localStorage.getItem('cascade-live-api-base-url') || defaultApiBaseUrl;
   const savedApiKey = localStorage.getItem('cascade-live-api-key') || '';
   const savedBearerToken = localStorage.getItem('cascade-live-bearer-token') || '';
 
@@ -236,9 +238,13 @@ function initializePreferences() {
 function getLiveApiBaseUrl() {
   const apiBaseUrlInput = document.getElementById('apiBaseUrl');
   const typedValue = apiBaseUrlInput?.value?.trim();
-  const storedValue = localStorage.getItem('cascade-live-api-base-url') || '';
-  const fallbackValue = `${window.location.origin}/v1`;
-  const resolved = typedValue || storedValue || fallbackValue;
+  const storedValue = window.location.protocol === 'file:'
+    ? ''
+    : localStorage.getItem('cascade-live-api-base-url') || '';
+  const fallbackValue = window.location.protocol === 'file:' ? '' : `${window.location.origin}/v1`;
+  const resolved = window.location.protocol === 'file:' && typedValue.startsWith('file:')
+    ? ''
+    : typedValue || storedValue || fallbackValue;
 
   if (apiBaseUrlInput && !typedValue) {
     apiBaseUrlInput.value = resolved;
@@ -469,11 +475,9 @@ async function speakNarration(text, key = null) {
   if (key) {
     const played = await playVoiceFile(key, sessionId);
     if (played) return;
-    updateVoiceStatus(`Missing personal voice clip: ${key}.mp3`, 'error');
-    return;
   }
 
-  updateVoiceStatus('Personal voice mode requires a recording key.', 'error');
+  await speakTTS(text, sessionId);
 }
 
 function stopActiveNarration() {
@@ -491,12 +495,9 @@ function stopActiveNarration() {
 // Play a personal recorded voice file. Returns true if it played to completion,
 // false if the file doesn't exist or any error occurs.
 function playVoiceFile(key, sessionId) {
-  const candidates = [
-    `./assets/voice/voice/${key}.mp3`,
-    `./assets/voice/voice/${key}.m4a`,
-    `./assets/voice/${key}.mp3`,
-    `./assets/voice/${key}.m4a`,
-  ];
+  const recordingKeys = new Set(['step1', 'step2', 'step3', 'step5', 'step6', 'step7', 'globe', 'flat', 'list', 'test']);
+  if (!recordingKeys.has(key)) return Promise.resolve(false);
+  const recordingPath = `./assets/voice/voice/${key}.mp3`;
 
   const tryPath = (path) =>
     new Promise((resolve) => {
@@ -504,7 +505,7 @@ function playVoiceFile(key, sessionId) {
       audio.preload = 'auto';
       let settled = false;
       let started = false;
-      const loadTimer = setTimeout(() => finish(false), 4500);
+      const loadTimer = setTimeout(() => finish(false), 900);
 
       const finish = (ok) => {
         if (!settled) {
@@ -554,13 +555,7 @@ function playVoiceFile(key, sessionId) {
       audio.load();
     });
 
-  return (async () => {
-    for (const path of candidates) {
-      const ok = await tryPath(path);
-      if (ok) return true;
-    }
-    return false;
-  })();
+  return tryPath(recordingPath);
 }
 
 // Web Speech API TTS — fully awaitable; resolves when the utterance finishes.
@@ -1254,52 +1249,6 @@ function clearLayers(layerList) {
   layerList.length = 0;
 }
 
-function ensureWorldFlatVideoOverlay(map, containerId) {
-  if (typeof L === 'undefined') return;
-
-  const bounds = [[-85, -180], [85, 180]];
-  const url = './assets/worldFlat.mp4';
-
-  let overlay = containerId === 'riskMapPreview' ? previewVideoOverlay : flatVideoOverlay;
-  if (overlay) {
-    map.removeLayer(overlay);
-  }
-
-  overlay = L.videoOverlay(url, bounds, {
-    autoplay: true,
-    loop: true,
-    muted: true,
-    interactive: false,
-    opacity: 0.62,
-    className: 'world-flat-video-overlay',
-  }).addTo(map);
-
-  const videoEl = overlay.getElement?.();
-  if (videoEl) {
-    videoEl.muted = true;
-    videoEl.loop = true;
-    videoEl.playsInline = true;
-    videoEl.setAttribute('playsinline', 'true');
-    videoEl.setAttribute('webkit-playsinline', 'true');
-    videoEl.addEventListener('error', () => {
-      // Keep base map visible if the video codec isn't supported in the browser.
-      overlay?.setOpacity?.(0);
-    }, { once: true });
-    const playback = videoEl.play();
-    if (playback?.catch) {
-      playback.catch(() => {
-        overlay?.setOpacity?.(0);
-      });
-    }
-  }
-
-  if (containerId === 'riskMapPreview') {
-    previewVideoOverlay = overlay;
-  } else {
-    flatVideoOverlay = overlay;
-  }
-}
-
 function ensureBaseTileLayer(map, containerId) {
   if (typeof L === 'undefined') return;
 
@@ -1334,11 +1283,9 @@ function ensureMap(containerId) {
     }).setView([12, 0], 1.6);
     previewMap.fitBounds(worldBounds, { padding: [8, 8], animate: false });
     ensureBaseTileLayer(previewMap, 'riskMapPreview');
-    ensureWorldFlatVideoOverlay(previewMap, 'riskMapPreview');
   } else if (containerId === 'riskMapPreview' && previewMap) {
     previewMap.fitBounds(worldBounds, { padding: [8, 8], animate: false });
     ensureBaseTileLayer(previewMap, 'riskMapPreview');
-    ensureWorldFlatVideoOverlay(previewMap, 'riskMapPreview');
   }
 
   if (containerId === 'flatMapContainer' && !flatMap) {
@@ -1351,11 +1298,9 @@ function ensureMap(containerId) {
     }).setView([12, 0], 1.6);
     flatMap.fitBounds(worldBounds, { padding: [20, 14], animate: false });
     ensureBaseTileLayer(flatMap, 'flatMapContainer');
-    ensureWorldFlatVideoOverlay(flatMap, 'flatMapContainer');
   } else if (containerId === 'flatMapContainer' && flatMap) {
     flatMap.fitBounds(worldBounds, { padding: [20, 14], animate: false });
     ensureBaseTileLayer(flatMap, 'flatMapContainer');
-    ensureWorldFlatVideoOverlay(flatMap, 'flatMapContainer');
   }
 
   return containerId === 'riskMapPreview' ? previewMap : flatMap;
@@ -1872,6 +1817,12 @@ function initializeNavigation() {
           setRiskView(currentMapView);
         }, 50);
       }
+      if (target === 'overview') {
+        setTimeout(() => {
+          previewMap?.invalidateSize();
+          renderLeafletMap('riskMapPreview');
+        }, 50);
+      }
       if (target === 'dependency-graph') {
         setTimeout(() => renderGraph('graphDetail'), 50);
       }
@@ -2136,6 +2087,58 @@ function addChatMessage(role, content) {
   renderChatMessages();
 }
 
+function splitChatQuestions(message) {
+  return message
+    .split(/\n+|(?<=[?])\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, 8);
+}
+
+function answerDemoChatQuestion(question) {
+  const lowerMessage = question.toLowerCase();
+
+  if (/\b(hello|hi|hey|help|what can you do)\b/.test(lowerMessage)) {
+    return 'I can answer questions about this dashboard, cascade prevention, engineering, operations, business planning, security, compliance, people, finance, and general decision-making. I can also work through several questions in one message.';
+  }
+  if (/\b(cascade|propagate|spread|blast radius|dependency)\b/.test(lowerMessage)) {
+    return 'Cascade analysis: identify the origin service, inspect queue depth, latency, error rate, retries, and saturation, then trace dependent services outward. Contain the highest-risk edge first, preserve a rollback path, and use advisory mode before approving traffic shaping or circuit breaking.';
+  }
+  if (/\b(business|impact|revenue|customer|profit|roi|cost)\b/.test(lowerMessage)) {
+    return 'Business analysis: connect the technical signal to affected customer journeys, transaction volume, revenue exposure, SLA commitments, staffing capacity, and operational work queues. Compare the cost of containment, delay, and customer harm before choosing a response.';
+  }
+  if (/\b(region|regional|failover|disaster|outage|availability|recovery|backup)\b/.test(lowerMessage)) {
+    return 'Resilience guidance: compare health, latency, replication lag, capacity, and data consistency across regions. Test failover and rollback with representative traffic, define recovery objectives, and keep high-impact actions advisory until the evidence is clear.';
+  }
+  if (/\b(mitigat|prevent|remediat|fix|solve|reduce risk|protect)\b/.test(lowerMessage)) {
+    return 'Mitigation guidance: start with the least disruptive reversible control, such as rate limiting, queue isolation, or workload prioritization. Require approval for high-risk changes, verify the expected metric movement, and record the decision and rollback condition.';
+  }
+  if (/\b(compliance|regulat|audit|privacy|gdpr|hipaa|soc ?2|policy|sla)\b/.test(lowerMessage)) {
+    return 'Governance guidance: preserve an immutable decision trail, document the policy and approver for each action, minimize sensitive data, respect residency and retention requirements, and verify that the response does not violate an SLA or control boundary.';
+  }
+  if (/\b(code|program|software|api|database|aws|cloud|deploy|test|bug|debug|technical)\b/.test(lowerMessage)) {
+    return 'Technical guidance: define the expected behavior, isolate the smallest reproducible case, inspect logs and metrics at the same time window, make one reversible change, and validate it with a focused test before broad rollout. Include timeout, retry, authentication, and failure-path behavior.';
+  }
+  if (/\b(team|staff|people|employee|hiring|leadership|culture|workload|project)\b/.test(lowerMessage)) {
+    return 'People and operations guidance: clarify ownership, capacity, decision rights, and the next measurable outcome. Avoid shifting critical work to an already overloaded team; use an explicit escalation path and communicate the tradeoff to affected stakeholders.';
+  }
+  if (/\b(logistics|supply|transport|shipping|inventory|warehouse|vendor)\b/.test(lowerMessage)) {
+    return 'Operations guidance: monitor lead time, throughput, backlog, carrier or vendor availability, and customer priority together. Protect constrained capacity for the highest-value commitments and establish a fallback route before the primary path fails.';
+  }
+  if (/\b(question|why|how|what|when|where|should|can|could|would)\b/.test(lowerMessage)) {
+    return 'A practical way to answer this is to clarify the desired outcome, constraints, available evidence, and acceptable risk. Compare two or three options, choose a reversible next step, define a success measure, and review the result before committing further.';
+  }
+
+  return 'I do not have enough context to make a specific claim, but I can still help reason through it. Share the goal, current situation, constraints, stakeholders, and what a good outcome looks like; I will turn that into options, risks, and next steps.';
+}
+
+function generateDemoChatResponse(message) {
+  const questions = splitChatQuestions(message);
+  return questions.length === 1
+    ? answerDemoChatQuestion(questions[0])
+    : questions.map((question, index) => `${index + 1}. ${answerDemoChatQuestion(question)}`).join('\n\n');
+}
+
 async function sendChatMessage() {
   const input = document.getElementById('aiChatInput');
   if (!input || chatLoading) return;
@@ -2153,8 +2156,8 @@ async function sendChatMessage() {
   // Check if live API is configured
   const baseUrl = getLiveApiBaseUrl();
   if (!baseUrl) {
-    addChatMessage('system', 'Live API not configured. Chat requires API connection.');
-    setChatStatus('Configure Live API Base URL in settings to use chat', 'error');
+    addChatMessage('assistant', generateDemoChatResponse(message));
+    setChatStatus('Demo advisory mode', '');
     return;
   }
 
