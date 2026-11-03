@@ -138,7 +138,7 @@ export async function handler(event: EventBridgeEvent<'CascadePathPredicted', Pr
 
   await emitPlanGenerated(plan, eventBusName);
 
-  const executionEnabled = process.env.REMEDIATION_EXECUTION_ENABLED !== 'false';
+  // Fail closed: execution requires an explicit opt-in. The current action executor\n  // is a reporting stub and does not perform live AWS remediation.\n  const executionEnabled = process.env.REMEDIATION_EXECUTION_ENABLED === 'true';
   if (executionEnabled && stateMachineArn && plan.actions.length >= 3) {
     await sfn.send(new StartExecutionCommand({
       stateMachineArn,
